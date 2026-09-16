@@ -232,10 +232,10 @@ function setupGeneratorEvents() {
     });
   });
 
-  // Live input change listeners
+  // Live input change listeners (Instantaneous 30ms debounce)
   const formInputs = document.querySelectorAll('.generator-studio input, .generator-studio textarea, .generator-studio select');
   formInputs.forEach((input) => {
-    input.addEventListener('input', debounce(refreshGeneratorPreview, 150));
+    input.addEventListener('input', debounce(refreshGeneratorPreview, 30));
     input.addEventListener('change', refreshGeneratorPreview);
   });
 

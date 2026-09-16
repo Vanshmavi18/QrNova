@@ -25,12 +25,14 @@ let currentQrData = {
 };
 
 const PRESETS = {
-  cyber: { foreground: '#00f0ff', background: '#0a0e1c' },
-  aurora: { foreground: '#a855f7', background: '#060911' },
-  emerald: { foreground: '#10b981', background: '#06130e' },
-  sunset: { foreground: '#f43f5e', background: '#18070b' },
+  cyber: { foreground: '#00f0ff', background: '#000000' },
+  aurora: { foreground: '#d946ef', background: '#090114' },
+  emerald: { foreground: '#00ff88', background: '#011409' },
+  sunset: { foreground: '#ff2e5b', background: '#140106' },
   monochrome: { foreground: '#000000', background: '#ffffff' },
 };
+
+let lastRenderedHash = '';
 
 /**
  * Construct raw string payload from active form inputs

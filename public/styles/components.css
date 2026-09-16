@@ -129,7 +129,7 @@
   padding: 16px;
   border-radius: var(--radius-md);
   background: var(--bg-card);
-  border: 1px solid var(--border-subtle);
+  border: 1px solid var(--border-medium);
   cursor: pointer;
   display: flex;
   flex-direction: column;
@@ -140,21 +140,22 @@
 .quick-action-card:hover {
   transform: translateY(-2px);
   background: var(--bg-card-hover);
-  border-color: var(--border-highlight);
+  border-color: var(--primary);
+  box-shadow: 0 6px 20px var(--primary-glow);
 }
 
 .quick-action-icon {
-  font-size: 1.5rem;
+  font-size: 1.6rem;
 }
 
 .quick-action-title {
-  font-size: 0.95rem;
-  font-weight: 700;
-  color: var(--text-main);
+  font-size: 0.98rem;
+  font-weight: 800;
+  color: #ffffff;
 }
 
 .quick-action-desc {
-  font-size: 0.78rem;
+  font-size: 0.8rem;
   color: var(--text-muted);
 }
 
@@ -205,26 +206,28 @@
   display: flex;
   align-items: center;
   gap: 6px;
-  padding: 8px 14px;
-  background: rgba(255, 255, 255, 0.04);
-  border: 1px solid var(--border-subtle);
+  padding: 9px 15px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.2);
   border-radius: var(--radius-sm);
-  color: var(--text-muted);
-  font-size: 0.85rem;
-  font-weight: 600;
+  color: #e2e8f0;
+  font-size: 0.88rem;
+  font-weight: 700;
   cursor: pointer;
   transition: all var(--transition-fast);
 }
 
 .type-btn:hover {
-  background: rgba(255, 255, 255, 0.08);
-  color: var(--text-main);
+  background: rgba(255, 255, 255, 0.16);
+  border-color: rgba(255, 255, 255, 0.4);
+  color: #ffffff;
 }
 
 .type-btn.active {
-  background: rgba(56, 189, 248, 0.15);
+  background: rgba(0, 240, 255, 0.2);
   border-color: var(--primary);
   color: var(--primary);
+  box-shadow: 0 0 14px rgba(0, 240, 255, 0.3);
 }
 
 /* Generator Left Panel Form Container */
@@ -245,7 +248,7 @@
   align-items: center;
   justify-content: space-between;
   padding: 14px 18px;
-  background: rgba(255, 255, 255, 0.03);
+  background: rgba(255, 255, 255, 0.06);
   border: 1px solid var(--border-subtle);
   border-radius: var(--radius-sm);
   cursor: pointer;
@@ -253,13 +256,14 @@
 }
 
 .accordion-header:hover {
-  background: rgba(255, 255, 255, 0.05);
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.3);
 }
 
 .accordion-body {
   display: none;
   padding: 18px;
-  background: rgba(0, 0, 0, 0.2);
+  background: rgba(0, 0, 0, 0.35);
   border: 1px solid var(--border-subtle);
   border-top: none;
   border-radius: 0 0 var(--radius-sm) var(--radius-sm);
@@ -278,22 +282,26 @@
 .preset-chip {
   padding: 10px;
   border-radius: var(--radius-sm);
-  border: 1px solid var(--border-subtle);
+  border: 1px solid rgba(255, 255, 255, 0.2);
   text-align: center;
-  font-size: 0.78rem;
+  font-size: 0.82rem;
   font-weight: 700;
   cursor: pointer;
   transition: all var(--transition-fast);
-  background: rgba(255, 255, 255, 0.03);
+  background: rgba(255, 255, 255, 0.06);
+  color: #ffffff;
 }
 
 .preset-chip:hover {
-  border-color: var(--border-highlight);
+  border-color: var(--primary);
+  background: rgba(255, 255, 255, 0.12);
 }
 
 .preset-chip.active {
   border-color: var(--primary);
-  box-shadow: 0 0 10px var(--primary-glow);
+  background: rgba(0, 240, 255, 0.2);
+  color: var(--primary);
+  box-shadow: 0 0 14px var(--primary-glow);
 }
 
 /* Live Preview Card (Right Column) */
@@ -306,18 +314,20 @@
   align-items: center;
   text-align: center;
   gap: 18px;
+  border: 1px solid var(--border-medium);
 }
 
 .qr-canvas-wrapper {
   background: #ffffff;
-  padding: 16px;
+  padding: 20px;
   border-radius: var(--radius-md);
-  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.5);
+  box-shadow: 0 14px 45px rgba(0, 0, 0, 0.85), 0 0 25px rgba(0, 240, 255, 0.25);
+  border: 4px solid #ffffff;
   display: flex;
   align-items: center;
   justify-content: center;
-  min-width: 260px;
-  min-height: 260px;
+  min-width: 270px;
+  min-height: 270px;
   position: relative;
 }
 

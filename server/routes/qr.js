@@ -5,8 +5,55 @@ const QrCode = require('../models/QrCode');
 const authMiddleware = require('../middleware/authMiddleware');
 const { isDbConnected } = require('../config/db');
 
+const fs = require('fs');
+const path = require('path');
+const storeFile = path.join(__dirname, '../data/qrcodes.json');
+
 // In-memory fallback for QR items when MongoDB is disconnected
 const memoryQrCodes = new Map();
+
+// Initialize memory from storeFile if exists
+try {
+  if (fs.existsSync(storeFile)) {
+    const raw = fs.readFileSync(storeFile, 'utf8');
+    const parsed = JSON.parse(raw);
+    parsed.forEach(it => memoryQrCodes.set(it._id, it));
+  }
+} catch (e) {}
+
+function persistMemoryStore() {
+  try {
+    fs.writeFileSync(storeFile, JSON.stringify(Array.from(memoryQrCodes.values()), null, 2));
+  } catch (e) {}
+}
+
+// Sync local items to MongoDB Atlas when connected
+async function syncLocalToMongo() {
+  if (!isDbConnected() || memoryQrCodes.size === 0) return;
+  try {
+    for (const [id, item] of memoryQrCodes.entries()) {
+      const exists = await QrCode.findOne({ shortCode: item.shortCode });
+      if (!exists) {
+        await QrCode.create({
+          userId: item.userId,
+          shortCode: item.shortCode,
+          title: item.title,
+          notes: item.notes,
+          type: item.type,
+          payload: item.payload,
+          styleConfig: item.styleConfig,
+          isPasswordProtected: item.isPasswordProtected,
+          isFavorite: item.isFavorite,
+          isSaved: item.isSaved,
+          source: item.source,
+          expiryDate: item.expiryDate,
+        });
+      }
+    }
+  } catch (e) {
+    console.warn('Sync to MongoDB pending:', e.message);
+  }
+}
 
 // Helper to generate short random code
 function generateShortCode() {
@@ -139,6 +186,7 @@ router.post('/', authMiddleware(false), async (req, res) => {
         updatedAt: new Date(),
       };
       memoryQrCodes.set(id, qrItem);
+      persistMemoryStore();
     }
 
     return res.status(201).json({ success: true, item: qrItem });
