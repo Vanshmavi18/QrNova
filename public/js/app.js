@@ -71,6 +71,8 @@ import {
   isAuthenticated,
   requestOtp,
   verifyOtp,
+  loginWithPassword,
+  registerWithPassword,
   signOut,
 } from './modules/authModal.js';
 
@@ -1226,7 +1228,31 @@ function openVoiceToQrModal() {
 ================================================== */
 function setupAuthModalEvents() {
   const authModal = document.getElementById('modal-auth');
-  const loginTriggerBtn = document.getElementById('btn-header-login');
+  const loginHeaderBtn = document.getElementById('btn-header-login');
+  const signupHeaderBtn = document.getElementById('btn-header-signup');
+  const logoutHeaderBtn = document.getElementById('btn-header-logout');
+
+  // Modal Navigation & Panels
+  const tabBtnLogin = document.getElementById('tab-btn-auth-login');
+  const tabBtnSignup = document.getElementById('tab-btn-auth-signup');
+  const panelLogin = document.getElementById('auth-panel-login');
+  const panelSignup = document.getElementById('auth-panel-signup');
+  const linkSwitchToSignup = document.getElementById('link-switch-to-signup');
+  const linkSwitchToLogin = document.getElementById('link-switch-to-login');
+
+  // Log In Method Toggles
+  const loginMethodOtp = document.getElementById('login-method-otp');
+  const loginMethodPwd = document.getElementById('login-method-pwd');
+  const loginOtpView = document.getElementById('login-otp-view');
+  const loginPwdView = document.getElementById('login-password-view');
+
+  // Sign Up Method Toggles
+  const signupMethodPwd = document.getElementById('signup-method-pwd');
+  const signupMethodOtp = document.getElementById('signup-method-otp');
+  const signupPwdView = document.getElementById('signup-password-view');
+  const signupOtpView = document.getElementById('signup-otp-view');
+
+  // Form Controls (Brevo OTP Log In)
   const stepEmail = document.getElementById('auth-step-email');
   const stepOtp = document.getElementById('auth-step-otp');
   const emailInput = document.getElementById('auth-email-input');
@@ -1236,26 +1262,235 @@ function setupAuthModalEvents() {
   const otpDigits = document.querySelectorAll('.otp-digit');
   const devOtpNotice = document.getElementById('auth-dev-otp-notice');
 
-  if (loginTriggerBtn) {
-    loginTriggerBtn.addEventListener('click', () => {
-      if (isAuthenticated()) {
-        if (confirm('Do you wish to sign out of your QrNova account?')) {
-          signOut();
-          updateAuthUI();
-          showToast('Signed out successfully.', 'info');
-        }
-      } else {
-        if (stepEmail && stepOtp) {
-          stepEmail.style.display = 'block';
-          stepOtp.style.display = 'none';
-        }
-        if (devOtpNotice) devOtpNotice.style.display = 'none';
-        authModal?.classList.add('active');
-      }
-    });
+  // Password Log In Controls
+  const loginPwdEmail = document.getElementById('login-pwd-email');
+  const loginPwdPass = document.getElementById('login-pwd-pass');
+  const btnLoginWithPwd = document.getElementById('btn-login-with-pwd');
+
+  // Password Sign Up Controls
+  const signupName = document.getElementById('signup-name');
+  const signupEmail = document.getElementById('signup-email');
+  const signupPassword = document.getElementById('signup-password');
+  const btnSignupSubmit = document.getElementById('btn-signup-submit');
+
+  // Brevo OTP Sign Up Controls
+  const signupOtpEmail = document.getElementById('signup-otp-email');
+  const btnSignupSendOtp = document.getElementById('btn-signup-send-otp');
+
+  function openAuthModal(mode = 'login') {
+    if (mode === 'signup') {
+      showSignupPanel();
+    } else {
+      showLoginPanel();
+    }
+    authModal?.classList.add('active');
   }
 
-  // Request OTP via Brevo API
+  function showLoginPanel() {
+    if (panelLogin && panelSignup) {
+      panelLogin.style.display = 'block';
+      panelSignup.style.display = 'none';
+      tabBtnLogin?.classList.add('btn-primary');
+      tabBtnLogin?.classList.remove('btn-secondary');
+      tabBtnSignup?.classList.add('btn-secondary');
+      tabBtnSignup?.classList.remove('btn-primary');
+    }
+  }
+
+  function showSignupPanel() {
+    if (panelLogin && panelSignup) {
+      panelLogin.style.display = 'none';
+      panelSignup.style.display = 'block';
+      tabBtnSignup?.classList.add('btn-primary');
+      tabBtnSignup?.classList.remove('btn-secondary');
+      tabBtnLogin?.classList.add('btn-secondary');
+      tabBtnLogin?.classList.remove('btn-primary');
+    }
+  }
+
+  // Header button triggers
+  loginHeaderBtn?.addEventListener('click', () => {
+    if (!isAuthenticated()) {
+      openAuthModal('login');
+    }
+  });
+
+  signupHeaderBtn?.addEventListener('click', () => {
+    openAuthModal('signup');
+  });
+
+  logoutHeaderBtn?.addEventListener('click', () => {
+    if (confirm('Do you wish to sign out of your QrNova account?')) {
+      signOut();
+      updateAuthUI();
+      showToast('Signed out successfully.', 'info');
+      refreshHistoryView();
+      refreshSavedView();
+    }
+  });
+
+  // Modal Tab switching
+  tabBtnLogin?.addEventListener('click', showLoginPanel);
+  tabBtnSignup?.addEventListener('click', showSignupPanel);
+  linkSwitchToSignup?.addEventListener('click', (e) => {
+    e.preventDefault();
+    showSignupPanel();
+  });
+  linkSwitchToLogin?.addEventListener('click', (e) => {
+    e.preventDefault();
+    showLoginPanel();
+  });
+
+  // Log In Method Toggles
+  loginMethodOtp?.addEventListener('click', () => {
+    loginMethodOtp.classList.add('active');
+    loginMethodPwd.classList.remove('active');
+    if (loginOtpView && loginPwdView) {
+      loginOtpView.style.display = 'block';
+      loginPwdView.style.display = 'none';
+    }
+  });
+
+  loginMethodPwd?.addEventListener('click', () => {
+    loginMethodPwd.classList.add('active');
+    loginMethodOtp.classList.remove('active');
+    if (loginOtpView && loginPwdView) {
+      loginOtpView.style.display = 'none';
+      loginPwdView.style.display = 'block';
+    }
+  });
+
+  // Sign Up Method Toggles
+  signupMethodPwd?.addEventListener('click', () => {
+    signupMethodPwd.classList.add('active');
+    signupMethodOtp.classList.remove('active');
+    if (signupPwdView && signupOtpView) {
+      signupPwdView.style.display = 'block';
+      signupOtpView.style.display = 'none';
+    }
+  });
+
+  signupMethodOtp?.addEventListener('click', () => {
+    signupMethodOtp.classList.add('active');
+    signupMethodPwd.classList.remove('active');
+    if (signupPwdView && signupOtpView) {
+      signupPwdView.style.display = 'none';
+      signupOtpView.style.display = 'block';
+    }
+  });
+
+  // Log In with Password
+  btnLoginWithPwd?.addEventListener('click', async () => {
+    const email = loginPwdEmail?.value.trim();
+    const password = loginPwdPass?.value;
+
+    if (!email || !password) {
+      showToast('Please enter both email and password.', 'warning');
+      return;
+    }
+
+    try {
+      btnLoginWithPwd.textContent = 'Logging In...';
+      btnLoginWithPwd.setAttribute('disabled', 'true');
+      const res = await loginWithPassword(email, password);
+      btnLoginWithPwd.textContent = '🔑 Log In with Password';
+      btnLoginWithPwd.removeAttribute('disabled');
+
+      authModal?.classList.remove('active');
+      updateAuthUI();
+      playChime('success');
+      showToast(`Welcome back, ${res.user?.name || res.user?.email}!`, 'success');
+
+      refreshHistoryView();
+      refreshSavedView();
+    } catch (err) {
+      btnLoginWithPwd.textContent = '🔑 Log In with Password';
+      btnLoginWithPwd.removeAttribute('disabled');
+      playChime('error');
+      showToast(err.message, 'error');
+    }
+  });
+
+  // Sign Up with Password
+  btnSignupSubmit?.addEventListener('click', async () => {
+    const name = signupName?.value.trim();
+    const email = signupEmail?.value.trim();
+    const password = signupPassword?.value;
+
+    if (!email || !password) {
+      showToast('Please enter both email and password.', 'warning');
+      return;
+    }
+
+    if (password.length < 6) {
+      showToast('Password must be at least 6 characters long.', 'warning');
+      return;
+    }
+
+    try {
+      btnSignupSubmit.textContent = 'Creating Account...';
+      btnSignupSubmit.setAttribute('disabled', 'true');
+      const res = await registerWithPassword(name, email, password);
+      btnSignupSubmit.textContent = '✨ Create Account & Sign In';
+      btnSignupSubmit.removeAttribute('disabled');
+
+      authModal?.classList.remove('active');
+      updateAuthUI();
+      playChime('success');
+      showToast(`Account created! Welcome, ${res.user?.name || res.user?.email}!`, 'success');
+
+      refreshHistoryView();
+      refreshSavedView();
+    } catch (err) {
+      btnSignupSubmit.textContent = '✨ Create Account & Sign In';
+      btnSignupSubmit.removeAttribute('disabled');
+      playChime('error');
+      showToast(err.message, 'error');
+    }
+  });
+
+  // Fast Sign Up via Brevo OTP
+  btnSignupSendOtp?.addEventListener('click', async () => {
+    const email = signupOtpEmail?.value.trim();
+    if (!email) {
+      showToast('Please enter your email address.', 'warning');
+      return;
+    }
+
+    try {
+      btnSignupSendOtp.textContent = 'Sending Code...';
+      btnSignupSendOtp.setAttribute('disabled', 'true');
+      const res = await requestOtp(email);
+      pendingEmailForOtp = email;
+      btnSignupSendOtp.textContent = '✉️ Send Verification Code';
+      btnSignupSendOtp.removeAttribute('disabled');
+
+      // Switch to OTP code entry view
+      showLoginPanel();
+      loginMethodOtp?.click();
+      if (stepEmail && stepOtp) {
+        stepEmail.style.display = 'none';
+        stepOtp.style.display = 'block';
+        document.getElementById('auth-target-email-label').textContent = email;
+      }
+      otpDigits[0]?.focus();
+
+      if (res.devOtp && devOtpNotice) {
+        devOtpNotice.style.display = 'block';
+        devOtpNotice.innerHTML = `🔑 <strong>Dev Test Mode:</strong> Your OTP is <code>${res.devOtp}</code>`;
+      }
+
+      playChime('success');
+      showToast(res.message || 'Verification code sent via Brevo!', 'success');
+    } catch (err) {
+      btnSignupSendOtp.textContent = '✉️ Send Verification Code';
+      btnSignupSendOtp.removeAttribute('disabled');
+      playChime('error');
+      showToast(err.message, 'error');
+    }
+  });
+
+  // Request OTP via Brevo API (in Log In view)
   if (sendOtpBtn && emailInput) {
     sendOtpBtn.addEventListener('click', async () => {
       const email = emailInput.value.trim();
@@ -1279,17 +1514,15 @@ function setupAuthModalEvents() {
           document.getElementById('auth-target-email-label').textContent = email;
         }
 
-        // Focus first digit box
         otpDigits[0]?.focus();
 
-        // If dev OTP provided (e.g. Brevo key not yet set), show hint
         if (res.devOtp && devOtpNotice) {
           devOtpNotice.style.display = 'block';
           devOtpNotice.innerHTML = `🔑 <strong>Dev Test Mode:</strong> Your OTP is <code>${res.devOtp}</code>`;
         }
 
         playChime('success');
-        showToast(res.message || 'Verification code sent to your email!', 'success');
+        showToast(res.message || 'Verification code sent via Brevo!', 'success');
       } catch (err) {
         sendOtpBtn.textContent = 'Send Verification Code';
         sendOtpBtn.removeAttribute('disabled');
@@ -1301,7 +1534,7 @@ function setupAuthModalEvents() {
 
   // Auto-advance OTP digit input boxes
   otpDigits.forEach((digit, index) => {
-    digit.addEventListener('input', (e) => {
+    digit.addEventListener('input', () => {
       if (digit.value.length >= 1) {
         digit.value = digit.value.slice(-1);
         if (index < otpDigits.length - 1) {
@@ -1334,19 +1567,18 @@ function setupAuthModalEvents() {
 
         const res = await verifyOtp(pendingEmailForOtp, enteredOtp);
 
-        verifyOtpBtn.textContent = 'Verify & Sign In';
+        verifyOtpBtn.textContent = 'Verify & Log In';
         verifyOtpBtn.removeAttribute('disabled');
 
         authModal?.classList.remove('active');
         updateAuthUI();
         playChime('success');
-        showToast(`Welcome, ${res.user?.email || 'User'}!`, 'success');
+        showToast(`Welcome, ${res.user?.name || res.user?.email || 'User'}!`, 'success');
 
-        // Sync history & vault
         refreshHistoryView();
         refreshSavedView();
       } catch (err) {
-        verifyOtpBtn.textContent = 'Verify & Sign In';
+        verifyOtpBtn.textContent = 'Verify & Log In';
         verifyOtpBtn.removeAttribute('disabled');
         playChime('error');
         showToast(err.message, 'error');
@@ -1366,16 +1598,24 @@ function setupAuthModalEvents() {
 
 function updateAuthUI() {
   const loginBtn = document.getElementById('btn-header-login');
+  const signupBtn = document.getElementById('btn-header-signup');
+  const logoutBtn = document.getElementById('btn-header-logout');
   const user = getCurrentUser();
 
-  if (loginBtn) {
-    if (user) {
-      loginBtn.innerHTML = `👤 ${escapeHtml(user.email.split('@')[0])} <span style="font-size:0.7em; color:var(--accent-emerald);">●</span>`;
-      loginBtn.title = `Signed in as ${user.email}. Click to sign out.`;
-    } else {
-      loginBtn.innerHTML = `🔑 Sign In`;
-      loginBtn.title = 'Sign in with Gmail OTP';
+  if (user) {
+    if (loginBtn) {
+      loginBtn.innerHTML = `👤 ${escapeHtml(user.name || user.email.split('@')[0])} <span style="font-size:0.7em; color:var(--accent-emerald);">●</span>`;
+      loginBtn.title = `Signed in as ${user.email}`;
     }
+    if (signupBtn) signupBtn.style.display = 'none';
+    if (logoutBtn) logoutBtn.style.display = 'inline-flex';
+  } else {
+    if (loginBtn) {
+      loginBtn.innerHTML = `🔑 Log In`;
+      loginBtn.title = 'Log in to your account';
+    }
+    if (signupBtn) signupBtn.style.display = 'inline-flex';
+    if (logoutBtn) logoutBtn.style.display = 'none';
   }
 }
 

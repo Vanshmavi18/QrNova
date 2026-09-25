@@ -80,6 +80,62 @@ export async function verifyOtp(email, otp) {
 }
 
 /**
+ * Log in with email and password
+ */
+export async function loginWithPassword(email, password) {
+  const res = await fetch('/api/auth/login', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email, password }),
+  });
+
+  const data = await res.json();
+  if (!res.ok || !data.success) {
+    throw new Error(data.error || 'Login failed.');
+  }
+
+  currentToken = data.token;
+  currentUser = data.user;
+
+  try {
+    localStorage.setItem(TOKEN_KEY, currentToken);
+    localStorage.setItem(USER_KEY, JSON.stringify(currentUser));
+  } catch (e) {
+    console.error('Failed to store auth tokens:', e);
+  }
+
+  return data;
+}
+
+/**
+ * Sign up / register with Name, Email, Password
+ */
+export async function registerWithPassword(name, email, password) {
+  const res = await fetch('/api/auth/register', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ name, email, password }),
+  });
+
+  const data = await res.json();
+  if (!res.ok || !data.success) {
+    throw new Error(data.error || 'Registration failed.');
+  }
+
+  currentToken = data.token;
+  currentUser = data.user;
+
+  try {
+    localStorage.setItem(TOKEN_KEY, currentToken);
+    localStorage.setItem(USER_KEY, JSON.stringify(currentUser));
+  } catch (e) {
+    console.error('Failed to store auth tokens:', e);
+  }
+
+  return data;
+}
+
+/**
  * Sign out
  */
 export function signOut() {

@@ -14,6 +14,10 @@ const userSchema = new mongoose.Schema({
     trim: true,
     default: '',
   },
+  password: {
+    type: String,
+    default: null,
+  },
   preferences: {
     theme: { type: String, default: 'dark', enum: ['dark', 'light', 'high-contrast'] },
     a11yLargeText: { type: Boolean, default: false },

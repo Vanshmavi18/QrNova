@@ -188,6 +188,161 @@ router.post('/verify-otp', async (req, res) => {
 });
 
 /**
+ * POST /api/auth/register
+ * Sign up a new user with Name, Email, and Password
+ * Body: { name, email, password }
+ */
+router.post('/register', async (req, res) => {
+  try {
+    const { name, email, password } = req.body;
+    if (!email || !password) {
+      return res.status(400).json({ success: false, error: 'Email and password are required.' });
+    }
+
+    const cleanEmail = email.trim().toLowerCase();
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(cleanEmail)) {
+      return res.status(400).json({ success: false, error: 'Please enter a valid email address.' });
+    }
+
+    if (password.length < 6) {
+      return res.status(400).json({ success: false, error: 'Password must be at least 6 characters long.' });
+    }
+
+    let existingUser = null;
+    if (isDbConnected()) {
+      existingUser = await User.findOne({ email: cleanEmail });
+    } else {
+      existingUser = memoryUsers.get(cleanEmail);
+    }
+
+    if (existingUser && existingUser.password) {
+      return res.status(400).json({ success: false, error: 'An account with this email already exists. Please log in.' });
+    }
+
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(password, salt);
+    const cleanName = (name || '').trim() || cleanEmail.split('@')[0];
+
+    let user = null;
+    if (isDbConnected()) {
+      if (existingUser) {
+        existingUser.name = cleanName;
+        existingUser.password = hashedPassword;
+        existingUser.lastLogin = new Date();
+        user = await existingUser.save();
+      } else {
+        user = await User.create({
+          email: cleanEmail,
+          name: cleanName,
+          password: hashedPassword,
+          lastLogin: new Date(),
+        });
+      }
+    } else {
+      if (existingUser) {
+        existingUser.name = cleanName;
+        existingUser.password = hashedPassword;
+        existingUser.lastLogin = new Date();
+        user = existingUser;
+      } else {
+        user = {
+          _id: 'usr_' + Date.now(),
+          email: cleanEmail,
+          name: cleanName,
+          password: hashedPassword,
+          preferences: { theme: 'dark', a11yLargeText: false, a11yHighContrast: false, soundEnabled: true },
+          createdAt: new Date(),
+          lastLogin: new Date(),
+        };
+        memoryUsers.set(cleanEmail, user);
+      }
+    }
+
+    const secret = process.env.JWT_SECRET || 'qrnova_jwt_secret_dev_key_849204928402';
+    const expiresIn = process.env.JWT_EXPIRES_IN || '7d';
+    const token = jwt.sign({ id: user._id, email: user.email }, secret, { expiresIn });
+
+    return res.status(201).json({
+      success: true,
+      message: 'Account created successfully!',
+      token,
+      user: {
+        id: user._id,
+        email: user.email,
+        name: user.name,
+        preferences: user.preferences,
+      },
+    });
+  } catch (error) {
+    console.error('Register Error:', error);
+    return res.status(500).json({ success: false, error: error.message || 'Registration failed.' });
+  }
+});
+
+/**
+ * POST /api/auth/login
+ * Log in an existing user with Email and Password
+ * Body: { email, password }
+ */
+router.post('/login', async (req, res) => {
+  try {
+    const { email, password } = req.body;
+    if (!email || !password) {
+      return res.status(400).json({ success: false, error: 'Email and password are required.' });
+    }
+
+    const cleanEmail = email.trim().toLowerCase();
+    let user = null;
+    if (isDbConnected()) {
+      user = await User.findOne({ email: cleanEmail });
+    } else {
+      user = memoryUsers.get(cleanEmail);
+    }
+
+    if (!user) {
+      return res.status(400).json({ success: false, error: 'No account found with this email. Please sign up.' });
+    }
+
+    if (!user.password) {
+      return res.status(400).json({
+        success: false,
+        error: 'This account was created via Brevo Email OTP. Please sign in with email verification code or register a password.',
+      });
+    }
+
+    const isMatch = await bcrypt.compare(password, user.password);
+    if (!isMatch) {
+      return res.status(400).json({ success: false, error: 'Incorrect email or password.' });
+    }
+
+    user.lastLogin = new Date();
+    if (isDbConnected()) {
+      await user.save();
+    }
+
+    const secret = process.env.JWT_SECRET || 'qrnova_jwt_secret_dev_key_849204928402';
+    const expiresIn = process.env.JWT_EXPIRES_IN || '7d';
+    const token = jwt.sign({ id: user._id, email: user.email }, secret, { expiresIn });
+
+    return res.json({
+      success: true,
+      message: 'Logged in successfully!',
+      token,
+      user: {
+        id: user._id,
+        email: user.email,
+        name: user.name,
+        preferences: user.preferences,
+      },
+    });
+  } catch (error) {
+    console.error('Password Login Error:', error);
+    return res.status(500).json({ success: false, error: 'Login failed. Please try again.' });
+  }
+});
+
+/**
  * GET /api/auth/me
  */
 router.get('/me', authMiddleware(true), async (req, res) => {

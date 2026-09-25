@@ -48,8 +48,14 @@
       </nav>
 
       <div class="header-actions">
-        <button class="btn btn-secondary btn-sm" id="btn-header-login" title="Sign in with Gmail OTP">
-          🔑 Sign In
+        <button class="btn btn-secondary btn-sm" id="btn-header-login" title="Log in to your account">
+          🔑 Log In
+        </button>
+        <button class="btn btn-primary btn-sm" id="btn-header-signup" title="Create a new account">
+          ✨ Sign Up
+        </button>
+        <button class="btn btn-secondary btn-sm" id="btn-header-logout" style="display: none;" title="Sign out">
+          🚪 Sign Out
         </button>
       </div>
     </div>
@@ -687,45 +693,128 @@
     </div>
   </div>
 
-  <!-- Modal: Brevo Gmail OTP Authentication -->
+  <!-- Modal: Authentication (Log In & Sign Up with Brevo OTP & Password options) -->
   <div class="modal-overlay" id="modal-auth" role="dialog" aria-modal="true" aria-labelledby="modal-auth-title">
-    <div class="modal-content">
+    <div class="modal-content" style="max-width: 480px;">
       <div class="modal-header">
-        <h3 id="modal-auth-title">🔑 Sign In with Gmail OTP</h3>
+        <h3 id="modal-auth-title">🔑 Account Access</h3>
         <button class="btn btn-icon btn-secondary" onclick="closeModal('modal-auth')">✕</button>
       </div>
       <div class="modal-body">
-        
-        <!-- Step 1: Request Email -->
-        <div id="auth-step-email">
-          <p style="margin-bottom: 16px;">Enter your email to receive a secure 6-digit one-time passcode delivered via Brevo API:</p>
-          <div class="form-group">
-            <label class="form-label" for="auth-email-input">Gmail / Email Address</label>
-            <input type="email" id="auth-email-input" class="form-input" placeholder="user@gmail.com" required>
-          </div>
-          <button class="btn btn-primary" id="btn-auth-send-otp" style="width: 100%; margin-top: 10px;">
-            ✉️ Send Verification Code
-          </button>
+
+        <!-- Top Switcher: Log In vs Sign Up -->
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; background: rgba(255, 219, 176, 0.08); padding: 4px; border-radius: var(--radius-sm); margin-bottom: 20px;">
+          <button type="button" class="btn btn-sm btn-primary" id="tab-btn-auth-login" style="border-radius: 6px; font-weight: 700;">🔑 Log In</button>
+          <button type="button" class="btn btn-sm btn-secondary" id="tab-btn-auth-signup" style="border-radius: 6px; font-weight: 700;">✨ Sign Up</button>
         </div>
 
-        <!-- Step 2: Enter 6-digit OTP -->
-        <div id="auth-step-otp" style="display: none; text-align: center;">
-          <p>We've sent a 6-digit passcode to <strong id="auth-target-email-label"></strong></p>
-          <div class="otp-input-group">
-            <input type="text" maxlength="1" class="otp-digit" inputmode="numeric" autocomplete="one-time-code">
-            <input type="text" maxlength="1" class="otp-digit" inputmode="numeric">
-            <input type="text" maxlength="1" class="otp-digit" inputmode="numeric">
-            <input type="text" maxlength="1" class="otp-digit" inputmode="numeric">
-            <input type="text" maxlength="1" class="otp-digit" inputmode="numeric">
-            <input type="text" maxlength="1" class="otp-digit" inputmode="numeric">
+        <!-- ================= LOG IN SECTION ================= -->
+        <div id="auth-panel-login">
+          <!-- Method Selector (Brevo OTP vs Password) -->
+          <div style="display: flex; gap: 8px; margin-bottom: 16px;">
+            <button type="button" class="type-btn active" id="login-method-otp" style="flex: 1; justify-content: center; padding: 7px 10px; font-size: 0.82rem;">✉️ Brevo OTP</button>
+            <button type="button" class="type-btn" id="login-method-pwd" style="flex: 1; justify-content: center; padding: 7px 10px; font-size: 0.82rem;">🔒 Password</button>
           </div>
 
-          <div id="auth-dev-otp-notice" class="url-safety-warning" style="display: none; margin: 12px 0;"></div>
+          <!-- Log In: Brevo OTP View -->
+          <div id="login-otp-view">
+            <!-- Step 1: Request Email -->
+            <div id="auth-step-email">
+              <p style="margin-bottom: 14px; font-size: 0.88rem; color: var(--text-muted);">Enter your email to receive a secure 6-digit one-time passcode delivered via Brevo API:</p>
+              <div class="form-group">
+                <label class="form-label" for="auth-email-input">Email Address</label>
+                <input type="email" id="auth-email-input" class="form-input" placeholder="user@gmail.com" required>
+              </div>
+              <button class="btn btn-primary" id="btn-auth-send-otp" style="width: 100%; margin-top: 6px;">
+                ✉️ Send Verification Code
+              </button>
+            </div>
 
-          <div style="display: flex; gap: 10px; margin-top: 20px;">
-            <button class="btn btn-secondary" id="btn-auth-back" style="flex: 1;">Back</button>
-            <button class="btn btn-primary" id="btn-auth-verify-otp" style="flex: 2;">Verify & Sign In</button>
+            <!-- Step 2: Enter 6-digit OTP -->
+            <div id="auth-step-otp" style="display: none; text-align: center;">
+              <p style="font-size: 0.88rem;">We've sent a 6-digit passcode to <strong id="auth-target-email-label"></strong></p>
+              <div class="otp-input-group">
+                <input type="text" maxlength="1" class="otp-digit" inputmode="numeric" autocomplete="one-time-code">
+                <input type="text" maxlength="1" class="otp-digit" inputmode="numeric">
+                <input type="text" maxlength="1" class="otp-digit" inputmode="numeric">
+                <input type="text" maxlength="1" class="otp-digit" inputmode="numeric">
+                <input type="text" maxlength="1" class="otp-digit" inputmode="numeric">
+                <input type="text" maxlength="1" class="otp-digit" inputmode="numeric">
+              </div>
+
+              <div id="auth-dev-otp-notice" class="url-safety-warning" style="display: none; margin: 12px 0;"></div>
+
+              <div style="display: flex; gap: 10px; margin-top: 16px;">
+                <button class="btn btn-secondary" id="btn-auth-back" style="flex: 1;">Back</button>
+                <button class="btn btn-primary" id="btn-auth-verify-otp" style="flex: 2;">Verify & Log In</button>
+              </div>
+            </div>
           </div>
+
+          <!-- Log In: Password View -->
+          <div id="login-password-view" style="display: none;">
+            <p style="margin-bottom: 14px; font-size: 0.88rem; color: var(--text-muted);">Enter your email and account password to log in:</p>
+            <div class="form-group">
+              <label class="form-label" for="login-pwd-email">Email Address</label>
+              <input type="email" id="login-pwd-email" class="form-input" placeholder="user@gmail.com" required>
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="login-pwd-pass">Password</label>
+              <input type="password" id="login-pwd-pass" class="form-input" placeholder="Enter your password" required>
+            </div>
+            <button class="btn btn-primary" id="btn-login-with-pwd" style="width: 100%; margin-top: 6px;">
+              🔑 Log In with Password
+            </button>
+          </div>
+
+          <p style="text-align: center; margin-top: 18px; font-size: 0.84rem; color: var(--text-muted);">
+            Don't have an account? <a href="#" id="link-switch-to-signup" style="color: var(--primary); font-weight: 700; text-decoration: underline;">Sign Up</a>
+          </p>
+        </div>
+
+        <!-- ================= SIGN UP SECTION ================= -->
+        <div id="auth-panel-signup" style="display: none;">
+          <!-- Method Selector (Password vs Brevo OTP) -->
+          <div style="display: flex; gap: 8px; margin-bottom: 16px;">
+            <button type="button" class="type-btn active" id="signup-method-pwd" style="flex: 1; justify-content: center; padding: 7px 10px; font-size: 0.82rem;">🔒 With Password</button>
+            <button type="button" class="type-btn" id="signup-method-otp" style="flex: 1; justify-content: center; padding: 7px 10px; font-size: 0.82rem;">✉️ Fast Brevo OTP</button>
+          </div>
+
+          <!-- Sign Up: Password View -->
+          <div id="signup-password-view">
+            <p style="margin-bottom: 14px; font-size: 0.88rem; color: var(--text-muted);">Create your free QrNova account to sync and manage QR codes:</p>
+            <div class="form-group">
+              <label class="form-label" for="signup-name">Full Name</label>
+              <input type="text" id="signup-name" class="form-input" placeholder="e.g. Alex Rivera">
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="signup-email">Email Address</label>
+              <input type="email" id="signup-email" class="form-input" placeholder="user@gmail.com" required>
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="signup-password">Password (Minimum 6 characters)</label>
+              <input type="password" id="signup-password" class="form-input" placeholder="Create a secure password" required>
+            </div>
+            <button class="btn btn-primary" id="btn-signup-submit" style="width: 100%; margin-top: 6px;">
+              ✨ Create Account & Sign In
+            </button>
+          </div>
+
+          <!-- Sign Up: Brevo OTP View -->
+          <div id="signup-otp-view" style="display: none;">
+            <p style="margin-bottom: 14px; font-size: 0.88rem; color: var(--text-muted);">Instant passwordless signup: we will send a 6-digit verification code to your email via Brevo:</p>
+            <div class="form-group">
+              <label class="form-label" for="signup-otp-email">Email Address</label>
+              <input type="email" id="signup-otp-email" class="form-input" placeholder="user@gmail.com" required>
+            </div>
+            <button class="btn btn-primary" id="btn-signup-send-otp" style="width: 100%; margin-top: 6px;">
+              ✉️ Send Verification Code
+            </button>
+          </div>
+
+          <p style="text-align: center; margin-top: 18px; font-size: 0.84rem; color: var(--text-muted);">
+            Already have an account? <a href="#" id="link-switch-to-login" style="color: var(--primary); font-weight: 700; text-decoration: underline;">Log In</a>
+          </p>
         </div>
 
       </div>
