@@ -25,6 +25,22 @@ app.use(express.static(path.join(__dirname, '../public')));
 app.use('/api/auth', authRoutes);
 app.use('/api/qr', qrRoutes);
 
+// Status endpoint
+const { isDbConnected } = require('./config/db');
+const { checkBrevoStatus } = require('./services/brevoService');
+
+app.get('/api/status', async (req, res) => {
+  const brevo = await checkBrevoStatus();
+  res.json({
+    success: true,
+    mongo: {
+      connected: isDbConnected(),
+      uriConfigured: Boolean(process.env.MONGODB_URI),
+    },
+    brevo,
+  });
+});
+
 // Dynamic QR Link Resolver (/d/:shortCode)
 app.get('/d/:shortCode', (req, res) => {
   // Direct client to the landing resolver in public/index.html with hash route

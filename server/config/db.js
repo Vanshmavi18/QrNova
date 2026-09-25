@@ -11,6 +11,21 @@ if (!fs.existsSync(dataDir)) {
   fs.mkdirSync(dataDir, { recursive: true });
 }
 
+// Mongoose connection event listeners
+mongoose.connection.on('connected', () => {
+  isConnected = true;
+  console.log(`✅ MongoDB Connection Established: ${mongoose.connection.name} @ ${mongoose.connection.host}`);
+});
+
+mongoose.connection.on('disconnected', () => {
+  isConnected = false;
+  console.warn('⚠️ MongoDB Disconnected. Operating in resilient storage mode.');
+});
+
+mongoose.connection.on('error', (err) => {
+  isConnected = false;
+});
+
 const connectDB = async () => {
   const uri = process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/qrnova';
   
@@ -26,7 +41,10 @@ const connectDB = async () => {
     console.log(`✅ MongoDB Atlas Connected Successfully!`);
     console.log(`🍃 Database: ${conn.connection.name} @ ${conn.connection.host}`);
     console.log(`==================================================\n`);
-    if (retryTimer) clearInterval(retryTimer);
+    if (retryTimer) {
+      clearInterval(retryTimer);
+      retryTimer = null;
+    }
   } catch (error) {
     isConnected = false;
     console.warn(`\n⚠️ MongoDB Atlas Connection Notice:`);
@@ -36,11 +54,11 @@ const connectDB = async () => {
       console.log(`   1. Go to https://cloud.mongodb.com`);
       console.log(`   2. In the left menu, click 'Network Access'`);
       console.log(`   3. Click 'Add IP Address'`);
-      console.log(`   4. Select 'Allow Access From Anywhere' (0.0.0.0/0) or add your current IP`);
+      console.log(`   4. Select 'Allow Access From Anywhere' (0.0.0.0/0) or add IP: 103.178.61.163`);
       console.log(`   5. Click 'Confirm' (The server will automatically connect within seconds!)\n`);
     }
 
-    // Auto-retry connection every 15 seconds so user doesn't need to restart the server!
+    // Auto-retry connection every 10 seconds so user doesn't need to restart the server!
     if (!retryTimer) {
       retryTimer = setInterval(() => {
         if (!isConnected) {
@@ -49,11 +67,15 @@ const connectDB = async () => {
             .then((conn) => {
               isConnected = true;
               clearInterval(retryTimer);
-              console.log(`\n✅ MongoDB Atlas Reconnected Successfully: ${conn.connection.host}/${conn.connection.name}`);
+              retryTimer = null;
+              console.log(`\n==================================================`);
+              console.log(`✅ MongoDB Atlas Reconnected Successfully!`);
+              console.log(`🍃 Database: ${conn.connection.name} @ ${conn.connection.host}`);
+              console.log(`==================================================\n`);
             })
             .catch(() => {});
         }
-      }, 15000);
+      }, 10000);
     }
   }
 };

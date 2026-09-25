@@ -11,10 +11,16 @@ let historyCache = [];
  * Load history items (combining local cache with server API)
  */
 export async function loadHistory({ source, token } = {}) {
-  // 1. Read from local storage first for instant UI response
+  // 1. Read from local storage first for instant UI response (filtering out any legacy test data)
   try {
     const raw = localStorage.getItem(LOCAL_STORAGE_KEY);
-    if (raw) historyCache = JSON.parse(raw);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      historyCache = Array.isArray(parsed) 
+        ? parsed.filter((it) => it && it.title !== 'Company Wi-Fi Guest Access' && it.shortCode !== '614804ed')
+        : [];
+      saveToLocalStorage(historyCache);
+    }
   } catch (e) {
     historyCache = [];
   }

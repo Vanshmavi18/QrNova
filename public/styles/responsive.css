@@ -9,7 +9,7 @@
   bottom: 0;
   left: 0;
   right: 0;
-  background: rgba(6, 9, 17, 0.95);
+  background: var(--bg-surface-elevated);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
   border-top: 1px solid var(--border-subtle);

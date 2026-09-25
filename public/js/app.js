@@ -1407,6 +1407,44 @@ function setupSettingsEvents() {
       setSoundEnabled(e.target.checked);
     });
   }
+
+  refreshServiceStatus();
+}
+
+async function refreshServiceStatus() {
+  try {
+    const res = await fetch('/api/status');
+    const data = await res.json();
+    const mongoBadge = document.getElementById('status-mongo-badge');
+    const mongoDesc = document.getElementById('status-mongo-desc');
+    const brevoBadge = document.getElementById('status-brevo-badge');
+    const brevoDesc = document.getElementById('status-brevo-desc');
+
+    if (mongoBadge) {
+      if (data.mongo?.connected) {
+        mongoBadge.className = 'badge badge-active';
+        mongoBadge.textContent = 'Connected (Atlas)';
+        if (mongoDesc) mongoDesc.innerHTML = '🍃 MongoDB Atlas cluster connected and active.';
+      } else {
+        mongoBadge.className = 'badge badge-expiring';
+        mongoBadge.textContent = 'Hybrid Local / Atlas';
+        if (mongoDesc) mongoDesc.innerHTML = '⚡ Seamless local storage active. Whitelist your IP in MongoDB Atlas to connect live cluster.';
+      }
+    }
+
+    if (brevoBadge) {
+      if (data.brevo?.connected) {
+        brevoBadge.className = 'badge badge-active';
+        brevoBadge.textContent = 'Verified Active';
+        if (brevoDesc) brevoDesc.textContent = `Brevo verified: ${data.brevo.email || 'Active'} (${data.brevo.credits ?? 300} credits)`;
+      } else if (data.brevo?.configured) {
+        brevoBadge.className = 'badge badge-active';
+        brevoBadge.textContent = 'API Ready';
+      }
+    }
+  } catch (e) {
+    console.warn('Status check notice:', e.message);
+  }
 }
 
 /* ==================================================

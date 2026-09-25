@@ -10,11 +10,11 @@ let currentQrData = {
   payload: 'https://qrnova.dev',
   rawInput: {},
   style: {
-    foreground: '#00f0ff',
-    background: '#0a0e1c',
+    foreground: '#FFB1B1',
+    background: '#140D12',
     ecc: 'M',
     size: 512,
-    preset: 'cyber',
+    preset: 'rose',
     hasLogo: false,
     logoData: null,
   },
@@ -25,11 +25,16 @@ let currentQrData = {
 };
 
 const PRESETS = {
-  cyber: { foreground: '#00f0ff', background: '#000000' },
-  aurora: { foreground: '#d946ef', background: '#090114' },
-  emerald: { foreground: '#00ff88', background: '#011409' },
-  sunset: { foreground: '#ff2e5b', background: '#140106' },
-  monochrome: { foreground: '#000000', background: '#ffffff' },
+  rose: { foreground: '#FFB1B1', background: '#140D12' },
+  peach: { foreground: '#FFDBB0', background: '#170F15' },
+  coral: { foreground: '#FFCCB8', background: '#1E131B' },
+  cream: { foreground: '#FFFAD3', background: '#261922' },
+  warmPaper: { foreground: '#1F0D12', background: '#FFFAD3' },
+  cyber: { foreground: '#FFB1B1', background: '#140D12' },
+  aurora: { foreground: '#FFCCB8', background: '#1E131B' },
+  emerald: { foreground: '#34d399', background: '#0d1a14' },
+  sunset: { foreground: '#FFDBB0', background: '#170F15' },
+  monochrome: { foreground: '#1F0D12', background: '#FFFAD3' },
 };
 
 let lastRenderedHash = '';

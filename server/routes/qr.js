@@ -12,12 +12,16 @@ const storeFile = path.join(__dirname, '../data/qrcodes.json');
 // In-memory fallback for QR items when MongoDB is disconnected
 const memoryQrCodes = new Map();
 
-// Initialize memory from storeFile if exists
+// Initialize memory from storeFile if exists (excluding any test data)
 try {
   if (fs.existsSync(storeFile)) {
     const raw = fs.readFileSync(storeFile, 'utf8');
     const parsed = JSON.parse(raw);
-    parsed.forEach(it => memoryQrCodes.set(it._id, it));
+    parsed.forEach((it) => {
+      if (it && it.title !== 'Company Wi-Fi Guest Access' && it.shortCode !== '614804ed') {
+        memoryQrCodes.set(it._id, it);
+      }
+    });
   }
 } catch (e) {}
 
@@ -29,9 +33,14 @@ function persistMemoryStore() {
 
 // Sync local items to MongoDB Atlas when connected
 async function syncLocalToMongo() {
-  if (!isDbConnected() || memoryQrCodes.size === 0) return;
+  if (!isDbConnected()) return;
   try {
+    // Purge test data from MongoDB if any exists
+    await QrCode.deleteMany({ title: 'Company Wi-Fi Guest Access' });
+
+    if (memoryQrCodes.size === 0) return;
     for (const [id, item] of memoryQrCodes.entries()) {
+      if (item.title === 'Company Wi-Fi Guest Access') continue;
       const exists = await QrCode.findOne({ shortCode: item.shortCode });
       if (!exists) {
         await QrCode.create({
