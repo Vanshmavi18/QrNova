@@ -1,6 +1,6 @@
 /* ==================================================
    RESPONSIVE DESIGN & MOBILE PHONE OPTIMIZATION
-   QrNova High-Aesthetic Mobile Experience
+   QrNova High-Aesthetic Mobile & Multi-Device Engine
 ================================================== */
 
 /* Universal Form Grids */
@@ -34,6 +34,17 @@
   margin-bottom: 20px;
 }
 
+/* Global Overflow Prevention */
+html, body {
+  max-width: 100vw;
+  overflow-x: hidden !important;
+  width: 100%;
+}
+
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+
 /* Mobile Bottom Navigation (Hidden on Desktop) */
 .mobile-nav-bar {
   display: none;
@@ -41,14 +52,19 @@
   bottom: 0;
   left: 0;
   right: 0;
-  background: var(--bg-surface-elevated);
+  background: rgba(26, 17, 23, 0.94);
   backdrop-filter: blur(24px);
   -webkit-backdrop-filter: blur(24px);
   border-top: 1px solid var(--border-subtle);
-  padding: 8px 6px max(10px, env(safe-area-inset-bottom));
-  z-index: 850;
+  padding: 6px 4px max(8px, env(safe-area-inset-bottom));
+  z-index: 950;
   justify-content: space-around;
-  box-shadow: 0 -4px 25px rgba(0, 0, 0, 0.5);
+  box-shadow: 0 -4px 25px rgba(0, 0, 0, 0.6);
+}
+
+[data-theme='light'] .mobile-nav-bar {
+  background: rgba(255, 253, 248, 0.95);
+  border-top: 1px solid var(--border-medium);
 }
 
 .mobile-nav-btn {
@@ -56,7 +72,7 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 3px;
+  gap: 2px;
   background: transparent;
   border: none;
   color: var(--text-muted);
@@ -68,6 +84,7 @@
   border-radius: var(--radius-sm);
   transition: all var(--transition-fast);
   -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
 }
 
 .mobile-nav-btn:hover {
@@ -77,7 +94,7 @@
 
 .mobile-nav-btn.active {
   color: var(--primary);
-  background: rgba(255, 177, 177, 0.14);
+  background: rgba(255, 177, 177, 0.16);
   font-weight: 800;
 }
 
@@ -86,23 +103,11 @@
   line-height: 1;
 }
 
-/* Tablet Breakpoint (Screen <= 1024px) */
+/* ==================================================
+   TABLET & COMPACT DESKTOP BREAKPOINT (Screen <= 1024px)
+================================================== */
 @media (max-width: 1024px) {
-  .generator-studio {
-    grid-template-columns: 1fr;
-  }
-  .preview-card {
-    position: static;
-    margin-top: 24px;
-  }
-  .scanner-studio {
-    grid-template-columns: 1fr;
-  }
-}
-
-/* Mobile Devices (Screen <= 768px) */
-@media (max-width: 768px) {
-  /* Hide desktop navbar, display native bottom bar */
+  /* Switch navigation to clean bottom bar */
   .main-nav {
     display: none !important;
   }
@@ -112,27 +117,70 @@
   }
 
   body {
-    padding-bottom: max(85px, calc(72px + env(safe-area-inset-bottom)));
+    padding-bottom: max(80px, calc(70px + env(safe-area-inset-bottom))) !important;
+  }
+
+  /* Single Column Studios */
+  .generator-studio {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 20px !important;
+  }
+
+  /* Show live QR preview at the top on tablet and mobile! */
+  .preview-card {
+    order: -1 !important;
+    position: static !important;
+    margin-top: 0 !important;
+    margin-bottom: 8px !important;
+    width: 100% !important;
+  }
+
+  .scanner-studio {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 20px !important;
+  }
+}
+
+/* ==================================================
+   MOBILE DEVICES (Screen <= 768px)
+================================================== */
+@media (max-width: 768px) {
+  /* Prevent iOS Safari from zooming into form inputs */
+  input, select, textarea, .form-input, .form-select, .form-textarea {
+    font-size: 16px !important;
+  }
+
+  .app-header {
+    padding: 10px 14px !important;
+  }
+
+  .header-inner {
+    gap: 10px !important;
   }
 
   .app-container {
-    margin-bottom: 24px;
-    padding: 0 16px;
+    margin-bottom: 20px !important;
+    padding: 0 14px !important;
+    max-width: 100% !important;
   }
 
   .hero-banner {
-    padding: 0 16px;
-    margin: 16px auto 12px;
+    padding: 0 14px !important;
+    margin: 12px auto 10px !important;
   }
 
-  /* Quick Actions horizontal touch carousel */
+  /* Quick Actions Touch Swipeable Row */
   .quick-actions-bar {
-    overflow-x: auto;
+    overflow-x: auto !important;
     -webkit-overflow-scrolling: touch;
     scroll-snap-type: x mandatory;
     scrollbar-width: none;
     gap: 10px;
     padding-bottom: 6px;
+    display: flex !important;
+    width: 100%;
   }
 
   .quick-actions-bar::-webkit-scrollbar {
@@ -140,20 +188,31 @@
   }
 
   .quick-action-card {
-    min-width: 145px;
-    padding: 14px;
+    min-width: 135px !important;
+    max-width: 160px;
+    padding: 12px 14px !important;
     flex-shrink: 0;
     scroll-snap-align: start;
+    border-radius: var(--radius-sm);
   }
 
-  /* QR Format Selector touch carousel */
+  .quick-action-title {
+    font-size: 0.9rem !important;
+  }
+
+  .quick-action-desc {
+    font-size: 0.74rem !important;
+  }
+
+  /* QR Format Selector Touch Horizontal Bar */
   .qr-type-selector {
-    overflow-x: auto;
+    overflow-x: auto !important;
     -webkit-overflow-scrolling: touch;
-    flex-wrap: nowrap;
+    flex-wrap: nowrap !important;
     scrollbar-width: none;
     padding-bottom: 8px;
     gap: 6px;
+    width: 100%;
   }
 
   .qr-type-selector::-webkit-scrollbar {
@@ -161,52 +220,71 @@
   }
 
   .type-btn {
-    flex-shrink: 0;
-    padding: 8px 12px;
-    font-size: 0.82rem;
-    min-height: 40px;
+    flex-shrink: 0 !important;
+    padding: 8px 12px !important;
+    font-size: 0.82rem !important;
+    min-height: 42px !important;
+    touch-action: manipulation;
   }
 
-  /* Collapse multi-column form grids on mobile */
+  /* Collapse Multi-Column Form Grids on Mobile */
   .form-grid-2, .form-grid-3 {
     grid-template-columns: 1fr !important;
     gap: 10px;
   }
 
+  /* Panels Padding on Mobile */
+  .glass-panel,
+  .form-builder-card,
+  .scanner-input-card,
+  .settings-card {
+    padding: 18px 14px !important;
+  }
+
   /* Generator Preview Card on Mobile */
+  .preview-card {
+    padding: 18px 14px !important;
+  }
+
   .qr-canvas-wrapper {
     min-width: 0 !important;
     min-height: 0 !important;
     width: 100% !important;
-    max-width: 250px !important;
+    max-width: min(250px, 75vw) !important;
     aspect-ratio: 1 / 1 !important;
-    padding: 14px !important;
-    margin: 0 auto;
+    padding: 12px !important;
+    margin: 0 auto !important;
+    box-sizing: border-box !important;
   }
 
   .qr-canvas-wrapper canvas,
   .qr-canvas-wrapper svg {
     width: 100% !important;
     height: auto !important;
+    max-width: 100% !important;
+    object-fit: contain !important;
+    display: block !important;
   }
 
   .preview-actions-grid {
-    grid-template-columns: repeat(2, 1fr);
-    gap: 8px;
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 8px !important;
     width: 100%;
   }
 
   .preview-actions-grid .btn {
-    min-height: 42px;
-    padding: 8px 6px;
-    font-size: 0.82rem;
-    justify-content: center;
+    min-height: 44px !important;
+    padding: 8px 6px !important;
+    font-size: 0.82rem !important;
+    justify-content: center !important;
+    touch-action: manipulation;
   }
 
   /* Scanner Viewfinder on Mobile */
   .viewfinder-box {
-    height: clamp(240px, 45vh, 340px);
-    width: 100%;
+    height: clamp(230px, 42vh, 320px) !important;
+    width: 100% !important;
+    max-width: 100% !important;
   }
 
   #qr-reader video {
@@ -217,45 +295,48 @@
   }
 
   .dropzone-box {
-    padding: 22px 14px;
+    padding: 20px 12px !important;
   }
 
   .scan-result-card {
-    padding: 18px 14px;
+    padding: 18px 14px !important;
   }
 
-  /* Direct Link Banner Touch-Friendly Layout */
+  /* Direct Accessible Link Banner on Mobile */
   .direct-link-banner {
-    padding: 14px 16px;
+    padding: 14px !important;
   }
 
   .direct-link-title {
-    font-size: 0.95rem;
-    word-break: break-all;
-    line-height: 1.4;
+    font-size: 0.92rem !important;
+    word-break: break-all !important;
+    line-height: 1.4 !important;
   }
 
   .direct-link-actions {
-    flex-direction: column;
-    gap: 8px;
-    width: 100%;
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 8px !important;
+    width: 100% !important;
   }
 
   .direct-link-actions #scan-direct-open-btn {
-    width: 100%;
-    min-height: 48px;
-    font-size: 0.95rem;
-    font-weight: 800;
-    justify-content: center;
+    width: 100% !important;
+    min-height: 48px !important;
+    font-size: 0.95rem !important;
+    font-weight: 800 !important;
+    justify-content: center !important;
+    padding: 10px 14px !important;
+    touch-action: manipulation;
   }
 
   .direct-link-actions #btn-scan-copy-link {
-    width: 100%;
-    min-height: 42px;
-    justify-content: center;
+    width: 100% !important;
+    min-height: 42px !important;
+    justify-content: center !important;
   }
 
-  /* Scanner Result Actions on Mobile: 2-column grid */
+  /* Scanner Result Action Buttons on Mobile: 2-Column Grid */
   .qr-actions-bar {
     display: grid !important;
     grid-template-columns: repeat(2, 1fr) !important;
@@ -264,157 +345,187 @@
   }
 
   .qr-actions-bar #btn-scan-open-url {
-    grid-column: 1 / -1;
-    justify-content: center;
-    min-height: 46px;
-    font-weight: 800;
-    font-size: 0.95rem;
+    grid-column: 1 / -1 !important;
+    justify-content: center !important;
+    min-height: 46px !important;
+    font-weight: 800 !important;
+    font-size: 0.95rem !important;
   }
 
   .qr-actions-bar .btn {
-    justify-content: center;
-    min-height: 42px;
-    font-size: 0.82rem;
-    padding: 8px 6px;
+    justify-content: center !important;
+    min-height: 42px !important;
+    font-size: 0.82rem !important;
+    padding: 8px 6px !important;
   }
 
-  /* Vault & History on Mobile */
+  /* Vault & Activity History on Mobile */
   .history-controls-bar {
-    flex-direction: column;
-    align-items: stretch;
-    gap: 12px;
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 12px !important;
   }
 
   .history-search-input {
-    max-width: 100%;
-    width: 100%;
+    max-width: 100% !important;
+    width: 100% !important;
+  }
+
+  .filter-pill-nav {
+    width: 100% !important;
+    justify-content: space-between !important;
+  }
+
+  .filter-pill-nav .nav-link {
+    flex: 1 !important;
+    text-align: center !important;
+    justify-content: center !important;
+    padding: 8px 6px !important;
+    font-size: 0.82rem !important;
   }
 
   .qr-cards-grid {
-    grid-template-columns: 1fr;
-    gap: 14px;
+    grid-template-columns: 1fr !important;
+    gap: 14px !important;
   }
 
   .qr-item-card {
-    padding: 16px 14px;
+    padding: 16px 14px !important;
   }
 
   .qr-card-preview-thumb {
-    width: 130px;
-    height: 130px;
+    width: 120px !important;
+    height: 120px !important;
     margin: 0 auto;
   }
 
   .qr-card-actions {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 6px;
+    display: flex !important;
+    flex-wrap: wrap !important;
+    gap: 6px !important;
   }
 
   .qr-card-actions .btn {
-    flex: 1 1 calc(50% - 6px);
-    justify-content: center;
-    min-height: 38px;
+    flex: 1 1 calc(50% - 6px) !important;
+    justify-content: center !important;
+    min-height: 38px !important;
   }
 
   .qr-card-actions .btn-del {
-    flex: 0 0 auto;
+    flex: 0 0 auto !important;
   }
 
   /* Modals on Mobile */
   .modal-overlay {
-    padding: 12px;
+    padding: 8px !important;
+    align-items: flex-end !important;
   }
 
   .modal-content {
-    width: 100%;
-    max-width: 100%;
-    border-radius: var(--radius-md);
-    max-height: 92vh;
-    overflow-y: auto;
+    width: 100% !important;
+    max-width: 100% !important;
+    border-radius: var(--radius-lg) var(--radius-lg) 0 0 !important;
+    max-height: 94vh !important;
+    overflow-y: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+    margin: 0 auto !important;
   }
 
   .modal-header {
-    padding: 14px 16px;
+    padding: 14px 16px !important;
   }
 
   .modal-body {
-    padding: 16px 14px;
+    padding: 16px 14px !important;
   }
 
   .modal-footer {
-    padding: 14px 16px;
-    flex-direction: column-reverse;
-    gap: 8px;
+    padding: 12px 16px !important;
+    flex-direction: column-reverse !important;
+    gap: 8px !important;
   }
 
   .modal-footer .btn {
-    width: 100%;
-    min-height: 44px;
-    justify-content: center;
+    width: 100% !important;
+    min-height: 44px !important;
+    justify-content: center !important;
   }
 
-  /* OTP Digits on Mobile */
+  /* OTP Digits on Mobile: Fluid Clamped Sizing (Fits All Phones!) */
   .otp-input-group {
-    display: flex;
-    justify-content: center;
-    gap: 6px;
-    width: 100%;
+    display: flex !important;
+    justify-content: center !important;
+    gap: clamp(4px, 1.8vw, 8px) !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+    margin: 16px 0 !important;
   }
 
   .otp-digit {
-    width: 38px;
-    height: 46px;
-    font-size: 1.25rem;
-    font-weight: 800;
-    padding: 0;
-    text-align: center;
+    width: clamp(34px, 11vw, 44px) !important;
+    height: clamp(44px, 13vw, 52px) !important;
+    font-size: clamp(1.1rem, 4vw, 1.35rem) !important;
+    font-weight: 800 !important;
+    padding: 0 !important;
+    text-align: center !important;
+    flex: 0 1 auto !important;
   }
 
-  /* Toast notification on mobile */
+  /* Toast Notification on Mobile: Positioned Above Bottom Nav */
   #toast-container {
-    left: 16px;
-    right: 16px;
-    bottom: max(85px, calc(72px + env(safe-area-inset-bottom)));
-    max-width: 100%;
+    left: 12px !important;
+    right: 12px !important;
+    bottom: max(75px, calc(65px + env(safe-area-inset-bottom))) !important;
+    max-width: 100% !important;
   }
 
   .toast {
-    width: 100%;
+    width: 100% !important;
   }
 }
 
-/* Compact Smartphones (Screen <= 480px) */
+/* ==================================================
+   COMPACT SMARTPHONES (Screen <= 480px)
+================================================== */
 @media (max-width: 480px) {
   .app-header {
-    padding: 8px 12px;
+    padding: 8px 12px !important;
   }
 
   .header-inner {
-    padding: 0;
-    gap: 8px;
+    padding: 0 !important;
+    gap: 8px !important;
   }
 
   .brand-logo {
-    font-size: 1.15rem;
-    gap: 6px;
+    font-size: 1.12rem !important;
+    gap: 6px !important;
   }
 
   .brand-logo-icon {
-    width: 30px;
-    height: 30px;
-    font-size: 0.9rem;
-    border-radius: 8px;
+    width: 30px !important;
+    height: 30px !important;
+    font-size: 0.85rem !important;
+    border-radius: 8px !important;
   }
 
   .header-actions {
-    gap: 6px;
+    gap: 6px !important;
   }
 
   .header-actions .btn {
-    padding: 6px 10px;
-    font-size: 0.76rem;
-    min-height: 34px;
+    padding: 6px 9px !important;
+    font-size: 0.74rem !important;
+    min-height: 34px !important;
+  }
+
+  #btn-header-login {
+    max-width: 110px !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    display: inline-block !important;
   }
 
   .user-profile-badge {
@@ -427,52 +538,51 @@
     display: inline-block;
   }
 
-  .glass-panel {
-    padding: 16px 12px;
-  }
-
-  .preview-card {
-    padding: 16px 10px;
-  }
-
   .preview-actions-grid {
-    grid-template-columns: 1fr;
-    gap: 8px;
+    grid-template-columns: 1fr 1fr !important;
+    gap: 6px !important;
   }
 
   .preview-actions-grid .btn {
-    min-height: 44px;
-    font-size: 0.85rem;
+    min-height: 42px !important;
+    font-size: 0.78rem !important;
+    padding: 6px 4px !important;
   }
 
   .direct-link-banner {
-    padding: 12px;
+    padding: 12px 10px !important;
   }
 
   .direct-link-title {
-    font-size: 0.9rem;
+    font-size: 0.88rem !important;
   }
 }
 
-/* Small Screens (Screen <= 360px) */
+/* ==================================================
+   ULTRA-COMPACT PHONES (Screen <= 360px)
+================================================== */
 @media (max-width: 360px) {
   .otp-input-group {
-    gap: 4px;
+    gap: 3px !important;
   }
 
   .otp-digit {
-    width: 34px;
-    height: 42px;
-    font-size: 1.1rem;
+    width: 32px !important;
+    height: 40px !important;
+    font-size: 1.05rem !important;
   }
 
   .brand-logo span {
-    font-size: 1.05rem;
+    font-size: 1.02rem !important;
   }
 
   .header-actions .btn {
-    padding: 5px 8px;
-    font-size: 0.72rem;
+    padding: 4px 6px !important;
+    font-size: 0.7rem !important;
+  }
+
+  .preview-actions-grid {
+    grid-template-columns: 1fr !important;
   }
 }
 
