@@ -213,6 +213,18 @@ function switchTab(tabId) {
   if (tabId === 'saved') refreshSavedView();
 }
 
+export function switchQrType(type) {
+  activeQrType = type;
+  document.querySelectorAll('.qr-type-selector .type-btn').forEach((btn) => {
+    const isTarget = btn.getAttribute('data-type') === type;
+    btn.classList.toggle('active', isTarget);
+    btn.setAttribute('aria-selected', isTarget ? 'true' : 'false');
+  });
+  document.querySelectorAll('.type-form-pane').forEach((p) => p.classList.remove('active'));
+  const activePane = document.getElementById(`form-${type}`);
+  if (activePane) activePane.classList.add('active');
+}
+
 /* ==================================================
    FEATURE 1: QR GENERATOR LOGIC
 ================================================== */
@@ -221,15 +233,8 @@ function setupGeneratorEvents() {
   const typeButtons = document.querySelectorAll('.type-btn');
   typeButtons.forEach((btn) => {
     btn.addEventListener('click', () => {
-      typeButtons.forEach((b) => b.classList.remove('active'));
-      btn.classList.add('active');
-      activeQrType = btn.getAttribute('data-type');
-
-      // Switch form pane
-      document.querySelectorAll('.type-form-pane').forEach((p) => p.classList.remove('active'));
-      const activePane = document.getElementById(`form-${activeQrType}`);
-      if (activePane) activePane.classList.add('active');
-
+      const type = btn.getAttribute('data-type');
+      switchQrType(type);
       refreshGeneratorPreview();
     });
   });
@@ -493,6 +498,14 @@ function setupGeneratorEvents() {
   });
 }
 
+let lastRecordedPayload = '';
+const debouncedRecordHistory = debounce((item, token) => {
+  if (item.payload && item.payload !== lastRecordedPayload) {
+    lastRecordedPayload = item.payload;
+    recordHistoryItem(item, token);
+  }
+}, 1500);
+
 /**
  * Regenerate canvas preview from current inputs
  */
@@ -515,8 +528,8 @@ async function refreshGeneratorPreview() {
     await renderQrToCanvas(canvas, payload, currentQrData.style);
   }
 
-  // Record to history cache seamlessly
-  recordHistoryItem(
+  // Record to history cache when typing settles
+  debouncedRecordHistory(
     {
       title: `${activeQrType.toUpperCase()} QR`,
       type: activeQrType,
@@ -1068,15 +1081,8 @@ function createQrCardElement(item, { isVaultView = false, onRegenerate, onDelete
 }
 
 function loadItemIntoGenerator(item) {
-  activeQrType = item.type || 'text';
   switchTab('generate');
-
-  // Activate type button
-  document.querySelectorAll('.type-btn').forEach((btn) => {
-    btn.classList.toggle('active', btn.getAttribute('data-type') === activeQrType);
-  });
-  document.querySelectorAll('.type-form-pane').forEach((p) => p.classList.remove('active'));
-  document.getElementById(`form-${activeQrType}`)?.classList.add('active');
+  switchQrType(item.type || 'text');
 
   // Fill raw text or url
   if (activeQrType === 'url') {
@@ -1206,8 +1212,8 @@ function setupVoiceEvents() {
         showToast('Please speak or enter text first.', 'warning');
         return;
       }
-      activeQrType = 'text';
       switchTab('generate');
+      switchQrType('text');
       const textInput = document.querySelector('#form-text textarea[name="text"]');
       if (textInput) textInput.value = text;
       refreshGeneratorPreview();
@@ -1276,6 +1282,8 @@ function setupAuthModalEvents() {
   // Brevo OTP Sign Up Controls
   const signupOtpEmail = document.getElementById('signup-otp-email');
   const btnSignupSendOtp = document.getElementById('btn-signup-send-otp');
+
+  let otpOrigin = 'login';
 
   function openAuthModal(mode = 'login') {
     if (mode === 'signup') {
@@ -1462,6 +1470,7 @@ function setupAuthModalEvents() {
       btnSignupSendOtp.setAttribute('disabled', 'true');
       const res = await requestOtp(email);
       pendingEmailForOtp = email;
+      otpOrigin = 'signup';
       btnSignupSendOtp.textContent = '✉️ Send Verification Code';
       btnSignupSendOtp.removeAttribute('disabled');
 
@@ -1504,6 +1513,7 @@ function setupAuthModalEvents() {
         sendOtpBtn.setAttribute('disabled', 'true');
         const res = await requestOtp(email);
         pendingEmailForOtp = email;
+        otpOrigin = 'login';
 
         sendOtpBtn.textContent = 'Send Verification Code';
         sendOtpBtn.removeAttribute('disabled');
@@ -1589,8 +1599,14 @@ function setupAuthModalEvents() {
   if (backToEmailBtn) {
     backToEmailBtn.addEventListener('click', () => {
       if (stepEmail && stepOtp) {
-        stepEmail.style.display = 'block';
         stepOtp.style.display = 'none';
+        if (devOtpNotice) devOtpNotice.style.display = 'none';
+        if (otpOrigin === 'signup') {
+          showSignupPanel();
+          signupMethodOtp?.click();
+        } else {
+          stepEmail.style.display = 'block';
+        }
       }
     });
   }
@@ -1753,3 +1769,21 @@ function closeModal(modalId) {
   document.getElementById(modalId)?.classList.remove('active');
 }
 window.closeModal = closeModal;
+
+// Modal Backdrop Click & Escape Key Dismissal
+document.querySelectorAll('.modal-overlay').forEach((overlay) => {
+  overlay.addEventListener('click', (e) => {
+    if (e.target === overlay) {
+      overlay.classList.remove('active');
+    }
+  });
+});
+
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') {
+    document.querySelectorAll('.modal-overlay.active').forEach((modal) => {
+      modal.classList.remove('active');
+    });
+  }
+});
+

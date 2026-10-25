@@ -241,6 +241,7 @@ router.put('/:id', authMiddleware(false), async (req, res) => {
       if (expiryDate !== undefined) item.expiryDate = expiryDate ? new Date(expiryDate) : null;
       item.updatedAt = new Date();
       updatedItem = item;
+      persistMemoryStore();
     }
 
     return res.json({ success: true, item: updatedItem });
@@ -261,6 +262,7 @@ router.delete('/:id', authMiddleware(false), async (req, res) => {
       await QrCode.findByIdAndDelete(id);
     } else {
       memoryQrCodes.delete(id);
+      persistMemoryStore();
     }
 
     return res.json({ success: true, message: 'QR item deleted successfully.' });
@@ -293,6 +295,7 @@ router.delete('/actions/clear', authMiddleware(false), async (req, res) => {
           memoryQrCodes.delete(id);
         }
       }
+      persistMemoryStore();
     }
 
     return res.json({ success: true, message: 'History cleared successfully.' });

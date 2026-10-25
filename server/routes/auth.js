@@ -61,10 +61,14 @@ router.post('/send-otp', async (req, res) => {
 
     const result = await sendOtpEmail(cleanEmail, otp);
 
+    const message = result.devOtp
+      ? (result.message || `Dev test mode: Verification code is ${result.devOtp}`)
+      : `A 6-digit verification code has been dispatched to ${cleanEmail}`;
+
     return res.json({
       success: true,
-      message: `A 6-digit verification code has been dispatched to ${cleanEmail}`,
-      devOtp: result.devOtp, // Returned only in development / when Brevo key is unset
+      message,
+      devOtp: result.devOtp, // Returned only in development / when Brevo key is unset or restricted
     });
   } catch (error) {
     console.error('Send OTP Error:', error);

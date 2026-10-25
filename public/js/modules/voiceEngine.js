@@ -44,7 +44,7 @@ export function startVoiceRecognition({ onInterim, onFinal, onError, onStart, on
     let interimTranscript = '';
     let finalTranscript = '';
 
-    for (let i = event.resultIndex; i < event.results.length; ++i) {
+    for (let i = 0; i < event.results.length; ++i) {
       if (event.results[i].isFinal) {
         finalTranscript += event.results[i][0].transcript;
       } else {
@@ -52,8 +52,9 @@ export function startVoiceRecognition({ onInterim, onFinal, onError, onStart, on
       }
     }
 
-    if (finalTranscript) onFinal?.(finalTranscript);
-    if (interimTranscript) onInterim?.(interimTranscript);
+    const combined = (finalTranscript + (interimTranscript ? ' ' + interimTranscript : '')).trim();
+    if (finalTranscript) onFinal?.(finalTranscript.trim());
+    if (interimTranscript) onInterim?.(combined);
   };
 
   recognitionInstance.onerror = (event) => {
