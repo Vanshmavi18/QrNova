@@ -154,10 +154,15 @@ export async function scanImageFile(file) {
  */
 export function evaluateUrlSecurity(text) {
   if (!text) return { isSafe: true, warnings: [], isUrl: false };
-  const trimmed = text.trim();
+  let trimmed = text.trim();
 
+  // Normalize URLs without protocol (e.g. www.domain.com or domain.com/path)
   if (!/^https?:\/\//i.test(trimmed)) {
-    return { isSafe: true, warnings: [], isUrl: false };
+    if (/^([a-zA-Z0-9-]+\.)+[a-zA-Z]{2,}(\/.*)?$/i.test(trimmed)) {
+      trimmed = 'https://' + trimmed;
+    } else {
+      return { isSafe: true, warnings: [], isUrl: false };
+    }
   }
 
   const warnings = [];

@@ -82,13 +82,14 @@ router.post('/send-otp', async (req, res) => {
  */
 router.post('/verify-otp', async (req, res) => {
   try {
-    const { email, otp } = req.body;
+    const { email, otp, name } = req.body;
     if (!email || !otp) {
       return res.status(400).json({ success: false, error: 'Email and 6-digit code are required.' });
     }
 
     const cleanEmail = email.trim().toLowerCase();
     const cleanOtp = otp.toString().trim();
+    const cleanName = (name || '').trim();
 
     let otpRecord = null;
     if (isDbConnected()) {
@@ -140,10 +141,13 @@ router.post('/verify-otp', async (req, res) => {
       if (!user) {
         user = await User.create({
           email: cleanEmail,
-          name: cleanEmail.split('@')[0],
+          name: cleanName || cleanEmail.split('@')[0],
           lastLogin: new Date(),
         });
       } else {
+        if (cleanName && (!user.name || user.name === cleanEmail.split('@')[0])) {
+          user.name = cleanName;
+        }
         user.lastLogin = new Date();
         await user.save();
       }
@@ -152,13 +156,16 @@ router.post('/verify-otp', async (req, res) => {
         memoryUsers.set(cleanEmail, {
           _id: 'usr_' + Date.now(),
           email: cleanEmail,
-          name: cleanEmail.split('@')[0],
+          name: cleanName || cleanEmail.split('@')[0],
           preferences: { theme: 'dark', a11yLargeText: false, a11yHighContrast: false, soundEnabled: true },
           createdAt: new Date(),
           lastLogin: new Date(),
         });
       }
       user = memoryUsers.get(cleanEmail);
+      if (cleanName && (!user.name || user.name === cleanEmail.split('@')[0])) {
+        user.name = cleanName;
+      }
       user.lastLogin = new Date();
     }
 

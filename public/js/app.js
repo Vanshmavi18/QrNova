@@ -627,6 +627,26 @@ function setupScannerEvents() {
     dropzone.addEventListener('click', () => fileInput?.click());
   }
 
+  // Auto-open toggle
+  const autoOpenToggle = document.getElementById('scan-auto-open-toggle');
+  if (autoOpenToggle) {
+    autoOpenToggle.checked = localStorage.getItem('qrnova_auto_open') === 'true';
+    autoOpenToggle.addEventListener('change', (e) => {
+      localStorage.setItem('qrnova_auto_open', e.target.checked ? 'true' : 'false');
+      showToast(e.target.checked ? '⚡ Auto-open enabled: links will open immediately on scan' : 'Auto-open disabled', 'info');
+    });
+  }
+
+  // Copy Direct Link button
+  document.getElementById('btn-scan-copy-link')?.addEventListener('click', async () => {
+    const anchor = document.getElementById('scan-direct-link-anchor');
+    if (anchor?.href) {
+      await navigator.clipboard.writeText(anchor.href);
+      playChime('success');
+      showToast('Direct link copied to clipboard!', 'success');
+    }
+  });
+
   // Result Actions
   document.getElementById('btn-scan-copy')?.addEventListener('click', async () => {
     if (!currentScannedPayload) return;
@@ -756,6 +776,12 @@ function displayScanResult(content) {
   const openUrlBtn = document.getElementById('btn-scan-open-url');
   const aiContainer = document.getElementById('ai-readable-container');
 
+  // Direct accessible link elements
+  const directBanner = document.getElementById('scan-direct-link-banner');
+  const directAnchor = document.getElementById('scan-direct-link-anchor');
+  const directOpenBtn = document.getElementById('scan-direct-open-btn');
+  const directDomain = document.getElementById('scan-direct-domain');
+
   if (resultCard) resultCard.style.display = 'flex';
   if (aiContainer) aiContainer.style.display = 'none';
 
@@ -763,21 +789,34 @@ function displayScanResult(content) {
   if (typeBadge) typeBadge.textContent = type.toUpperCase();
   if (timeBadge) timeBadge.textContent = new Date().toLocaleTimeString();
 
-  // Raw Content Display (sanitized)
-  if (contentDisplay) contentDisplay.textContent = content;
-
-  // Feature 7: Human Readable View
-  if (readableContainer) {
-    readableContainer.innerHTML = formatReadableContent(content);
-  }
-
-  // Security Check for URLs
+  // Security Check for URLs & Direct Link Banner
   const security = evaluateUrlSecurity(content);
   if (security.isUrl) {
+    if (directBanner) {
+      directBanner.style.display = 'flex';
+      if (directDomain) directDomain.textContent = security.hostname || 'Web Destination';
+      if (directAnchor) {
+        directAnchor.href = security.fullUrl;
+        directAnchor.textContent = security.fullUrl;
+      }
+      if (directOpenBtn) {
+        directOpenBtn.href = security.fullUrl;
+        directOpenBtn.onclick = (e) => {
+          e.preventDefault();
+          handleSafeUrlOpen(security);
+        };
+      }
+    }
+
+    if (contentDisplay) {
+      contentDisplay.innerHTML = `<a href="${escapeHtml(security.fullUrl)}" target="_blank" rel="noopener noreferrer" class="clickable-decoded-link" title="Click to open link directly">${escapeHtml(content)} ↗</a>`;
+    }
+
     if (openUrlBtn) {
       openUrlBtn.style.display = 'inline-flex';
       openUrlBtn.onclick = () => handleSafeUrlOpen(security);
     }
+
     if (urlWarningBox) {
       if (!security.isSafe) {
         urlWarningBox.style.display = 'flex';
@@ -786,9 +825,22 @@ function displayScanResult(content) {
         urlWarningBox.style.display = 'none';
       }
     }
+
+    // Auto-open if configured by user
+    if (localStorage.getItem('qrnova_auto_open') === 'true') {
+      handleSafeUrlOpen(security);
+      showToast('🚀 Directly opening scanned link in new tab...', 'success');
+    }
   } else {
+    if (directBanner) directBanner.style.display = 'none';
+    if (contentDisplay) contentDisplay.textContent = content;
     if (openUrlBtn) openUrlBtn.style.display = 'none';
     if (urlWarningBox) urlWarningBox.style.display = 'none';
+  }
+
+  // Feature 7: Human Readable View
+  if (readableContainer) {
+    readableContainer.innerHTML = formatReadableContent(content);
   }
 
   showToast(`Successfully decoded ${type.toUpperCase()} QR code!`, 'success');
@@ -1280,10 +1332,41 @@ function setupAuthModalEvents() {
   const btnSignupSubmit = document.getElementById('btn-signup-submit');
 
   // Brevo OTP Sign Up Controls
+  const signupOtpName = document.getElementById('signup-otp-name');
   const signupOtpEmail = document.getElementById('signup-otp-email');
   const btnSignupSendOtp = document.getElementById('btn-signup-send-otp');
 
   let otpOrigin = 'login';
+  let pendingNameForOtp = '';
+
+  function renderOtpNotice(otp, message) {
+    if (!devOtpNotice) return;
+    devOtpNotice.style.display = 'block';
+    const isIpNotice = message && message.includes('unrecognised IP');
+    devOtpNotice.innerHTML = `
+      <div style="display: flex; flex-direction: column; gap: 8px;">
+        <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 6px;">
+          <span style="font-size: 0.88rem; font-weight: 700; color: var(--accent-peach);">🔑 Verification Passcode:</span>
+          <span class="otp-badge-code">${otp}</span>
+        </div>
+        <p style="font-size: 0.76rem; color: var(--text-muted); margin: 0; line-height: 1.4;">
+          ${isIpNotice ? 'Brevo security detected an unverified IP. Dev passcode is ready below:' : 'Use this 6-digit code to complete instant MongoDB authentication:'}
+        </p>
+        <button type="button" class="btn btn-primary btn-sm" id="btn-autofill-otp" style="width: 100%; margin-top: 4px; justify-content: center;">
+          ⚡ Auto-Fill Code & Verify
+        </button>
+      </div>
+    `;
+
+    document.getElementById('btn-autofill-otp')?.addEventListener('click', () => {
+      const str = otp.toString();
+      otpDigits.forEach((digit, i) => {
+        if (str[i]) digit.value = str[i];
+      });
+      playChime('click');
+      verifyOtpBtn?.click();
+    });
+  }
 
   function openAuthModal(mode = 'login') {
     if (mode === 'signup') {
@@ -1459,6 +1542,7 @@ function setupAuthModalEvents() {
 
   // Fast Sign Up via Brevo OTP
   btnSignupSendOtp?.addEventListener('click', async () => {
+    const name = signupOtpName?.value.trim() || '';
     const email = signupOtpEmail?.value.trim();
     if (!email) {
       showToast('Please enter your email address.', 'warning');
@@ -1470,6 +1554,7 @@ function setupAuthModalEvents() {
       btnSignupSendOtp.setAttribute('disabled', 'true');
       const res = await requestOtp(email);
       pendingEmailForOtp = email;
+      pendingNameForOtp = name;
       otpOrigin = 'signup';
       btnSignupSendOtp.textContent = '✉️ Send Verification Code';
       btnSignupSendOtp.removeAttribute('disabled');
@@ -1484,9 +1569,8 @@ function setupAuthModalEvents() {
       }
       otpDigits[0]?.focus();
 
-      if (res.devOtp && devOtpNotice) {
-        devOtpNotice.style.display = 'block';
-        devOtpNotice.innerHTML = `🔑 <strong>Dev Test Mode:</strong> Your OTP is <code>${res.devOtp}</code>`;
+      if (res.devOtp) {
+        renderOtpNotice(res.devOtp, res.message);
       }
 
       playChime('success');
@@ -1513,6 +1597,7 @@ function setupAuthModalEvents() {
         sendOtpBtn.setAttribute('disabled', 'true');
         const res = await requestOtp(email);
         pendingEmailForOtp = email;
+        pendingNameForOtp = '';
         otpOrigin = 'login';
 
         sendOtpBtn.textContent = 'Send Verification Code';
@@ -1526,9 +1611,8 @@ function setupAuthModalEvents() {
 
         otpDigits[0]?.focus();
 
-        if (res.devOtp && devOtpNotice) {
-          devOtpNotice.style.display = 'block';
-          devOtpNotice.innerHTML = `🔑 <strong>Dev Test Mode:</strong> Your OTP is <code>${res.devOtp}</code>`;
+        if (res.devOtp) {
+          renderOtpNotice(res.devOtp, res.message);
         }
 
         playChime('success');
@@ -1575,7 +1659,7 @@ function setupAuthModalEvents() {
         verifyOtpBtn.textContent = 'Verifying...';
         verifyOtpBtn.setAttribute('disabled', 'true');
 
-        const res = await verifyOtp(pendingEmailForOtp, enteredOtp);
+        const res = await verifyOtp(pendingEmailForOtp, enteredOtp, pendingNameForOtp);
 
         verifyOtpBtn.textContent = 'Verify & Log In';
         verifyOtpBtn.removeAttribute('disabled');

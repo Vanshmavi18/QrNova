@@ -427,6 +427,13 @@
             <button class="btn btn-primary" id="btn-toggle-camera" style="flex: 1;">📷 Start Camera</button>
           </div>
 
+          <div style="margin-top: 10px; display: flex; align-items: center; justify-content: space-between;">
+            <label style="display: flex; align-items: center; gap: 8px; font-size: 0.85rem; color: var(--text-muted); cursor: pointer;">
+              <input type="checkbox" id="scan-auto-open-toggle">
+              <span>⚡ Directly open web links in new tab on scan</span>
+            </label>
+          </div>
+
           <!-- Drag and Drop Dropzone -->
           <div class="dropzone-box" id="scanner-dropzone">
             <div style="font-size: 2.2rem; margin-bottom: 8px;">📥</div>
@@ -445,6 +452,23 @@
               <span class="badge badge-active" style="margin-left: 6px;">Verified</span>
             </div>
             <span style="font-size: 0.8rem; color: var(--text-faint);" id="scan-result-timestamp">Just now</span>
+          </div>
+
+          <!-- DIRECT ACCESSIBLE LINK BANNER -->
+          <div class="direct-link-banner" id="scan-direct-link-banner" style="display: none;">
+            <div class="direct-link-badge-row">
+              <span class="direct-link-badge">🚀 DIRECT LINK READY</span>
+              <span class="direct-link-domain" id="scan-direct-domain"></span>
+            </div>
+            <a href="#" id="scan-direct-link-anchor" target="_blank" rel="noopener noreferrer" class="direct-link-title" title="Click to open link directly"></a>
+            <div class="direct-link-actions">
+              <a href="#" id="scan-direct-open-btn" target="_blank" rel="noopener noreferrer" class="btn btn-primary btn-lg" style="flex: 1; text-align: center; justify-content: center;">
+                🌐 Open Link in New Tab ↗
+              </a>
+              <button class="btn btn-secondary btn-lg" id="btn-scan-copy-link" title="Copy URL">
+                📋 Copy Link
+              </button>
+            </div>
           </div>
 
           <!-- Decoded Raw Content -->
@@ -742,7 +766,7 @@
                 <input type="text" maxlength="1" class="otp-digit" inputmode="numeric">
               </div>
 
-              <div id="auth-dev-otp-notice" class="url-safety-warning" style="display: none; margin: 12px 0;"></div>
+              <div id="auth-dev-otp-notice" class="otp-notice-box" style="display: none; margin: 14px 0;"></div>
 
               <div style="display: flex; gap: 10px; margin-top: 16px;">
                 <button class="btn btn-secondary" id="btn-auth-back" style="flex: 1;">Back</button>
@@ -803,6 +827,10 @@
           <!-- Sign Up: Brevo OTP View -->
           <div id="signup-otp-view" style="display: none;">
             <p style="margin-bottom: 14px; font-size: 0.88rem; color: var(--text-muted);">Instant passwordless signup: we will send a 6-digit verification code to your email via Brevo:</p>
+            <div class="form-group">
+              <label class="form-label" for="signup-otp-name">Full Name (Optional)</label>
+              <input type="text" id="signup-otp-name" class="form-input" placeholder="e.g. Alex Rivera">
+            </div>
             <div class="form-group">
               <label class="form-label" for="signup-otp-email">Email Address</label>
               <input type="email" id="signup-otp-email" class="form-input" placeholder="user@gmail.com" required>

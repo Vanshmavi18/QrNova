@@ -54,11 +54,11 @@ export async function requestOtp(email) {
 /**
  * Verify 6-digit OTP code and receive JWT
  */
-export async function verifyOtp(email, otp) {
+export async function verifyOtp(email, otp, name = '') {
   const res = await fetch('/api/auth/verify-otp', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ email, otp }),
+    body: JSON.stringify({ email, otp, name }),
   });
 
   const data = await res.json();

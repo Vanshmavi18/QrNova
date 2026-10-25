@@ -727,3 +727,104 @@
   white-space: pre-wrap;
 }
 
+/* ==================================================
+   DIRECT ACCESSIBLE LINK BANNER
+================================================== */
+.direct-link-banner {
+  background: linear-gradient(135deg, rgba(255, 177, 177, 0.12) 0%, rgba(255, 219, 176, 0.12) 100%);
+  border: 2px solid var(--primary);
+  box-shadow: 0 0 25px var(--primary-glow);
+  border-radius: var(--radius-md);
+  padding: 18px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 14px;
+  animation: pulseGlow 3s infinite alternate;
+}
+
+@keyframes pulseGlow {
+  0% { box-shadow: 0 0 15px rgba(255, 177, 177, 0.25); }
+  100% { box-shadow: 0 0 28px rgba(255, 177, 177, 0.45); }
+}
+
+.direct-link-badge-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.direct-link-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--primary);
+  color: #1a0c10;
+  font-weight: 800;
+  font-size: 0.76rem;
+  letter-spacing: 0.05em;
+  padding: 3px 10px;
+  border-radius: var(--radius-full);
+}
+
+.direct-link-domain {
+  font-family: var(--font-mono);
+  font-size: 0.82rem;
+  color: var(--accent-peach);
+  font-weight: 700;
+}
+
+.direct-link-title {
+  font-size: 1.08rem;
+  font-weight: 700;
+  color: var(--text-main);
+  text-decoration: underline;
+  word-break: break-all;
+  line-height: 1.4;
+  transition: color var(--transition-fast);
+}
+
+.direct-link-title:hover {
+  color: var(--primary-hover);
+}
+
+.direct-link-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 4px;
+}
+
+.clickable-decoded-link {
+  color: var(--primary);
+  text-decoration: underline;
+  font-weight: 700;
+  word-break: break-all;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.clickable-decoded-link:hover {
+  color: var(--primary-hover);
+}
+
+.otp-notice-box {
+  background: rgba(255, 219, 176, 0.08);
+  border: 1px solid var(--accent-peach);
+  border-radius: var(--radius-sm);
+  padding: 12px 16px;
+  color: var(--text-main);
+}
+
+.otp-badge-code {
+  font-family: var(--font-mono);
+  font-size: 1.35rem;
+  font-weight: 900;
+  color: var(--primary);
+  letter-spacing: 4px;
+  margin-left: 8px;
+}
+
+

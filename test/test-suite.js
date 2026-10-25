@@ -113,13 +113,16 @@ async function runTestSuite() {
     const verifyRes = await fetch(`${BASE_URL}/api/auth/verify-otp`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email: otpEmail, otp: receivedOtp }),
+      body: JSON.stringify({ email: otpEmail, otp: receivedOtp, name: 'OTP Verified Champion' }),
     });
     const verifyData = await verifyRes.json();
     if (!verifyData.success || !verifyData.token) {
       throw new Error(verifyData.error || 'Verify OTP failed');
     }
-    console.log(`   ✅ OTP verification successful, JWT token issued`);
+    if (verifyData.user?.name !== 'OTP Verified Champion') {
+      throw new Error('User name was not stored in MongoDB');
+    }
+    console.log(`   ✅ OTP verification successful, name "${verifyData.user?.name}" safely stored in MongoDB`);
   }
 
   // 7. QR Creation with Dynamic Link and Expiry
