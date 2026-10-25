@@ -70,9 +70,14 @@ import {
   getCurrentUser,
   getAuthToken,
   isAuthenticated,
+  loginUser,
+  loginWithPassword,
+  requestSignupOtp,
+  verifySignupOtp,
+  requestPasswordReset,
+  confirmPasswordReset,
   requestOtp,
   verifyOtp,
-  loginWithPassword,
   registerWithPassword,
   signOut,
 } from './modules/authModal.js';
@@ -1333,7 +1338,7 @@ function openVoiceToQrModal() {
 }
 
 /* ==================================================
-   BREVO GMAIL OTP AUTHENTICATION
+   AUTHENTICATION: NEW REGISTRATION (BREVO OTP), DIRECT LOGIN & PASSWORD RESET
 ================================================== */
 function setupAuthModalEvents() {
   const authModal = document.getElementById('modal-auth');
@@ -1341,113 +1346,230 @@ function setupAuthModalEvents() {
   const signupHeaderBtn = document.getElementById('btn-header-signup');
   const logoutHeaderBtn = document.getElementById('btn-header-logout');
 
-  // Modal Navigation & Panels
+  // Main Tabs & Top Containers
+  const authMainTabs = document.getElementById('auth-main-tabs');
   const tabBtnLogin = document.getElementById('tab-btn-auth-login');
   const tabBtnSignup = document.getElementById('tab-btn-auth-signup');
+
+  // Panels
   const panelLogin = document.getElementById('auth-panel-login');
   const panelSignup = document.getElementById('auth-panel-signup');
+  const panelReset = document.getElementById('auth-panel-reset');
+  const panelOtpLogin = document.getElementById('auth-panel-otp-login');
+
+  // Switch Links
   const linkSwitchToSignup = document.getElementById('link-switch-to-signup');
   const linkSwitchToLogin = document.getElementById('link-switch-to-login');
+  const linkForgotPassword = document.getElementById('link-forgot-password');
+  const linkResetToLogin = document.getElementById('link-reset-to-login');
+  const btnResetCancel = document.getElementById('btn-reset-cancel');
+  const btnSwitchToOtpLogin = document.getElementById('btn-switch-to-otp-login');
+  const btnOtpLoginBackToPwd = document.getElementById('btn-otp-login-back-to-pwd');
 
-  // Log In Method Toggles
-  const loginMethodOtp = document.getElementById('login-method-otp');
-  const loginMethodPwd = document.getElementById('login-method-pwd');
-  const loginOtpView = document.getElementById('login-otp-view');
-  const loginPwdView = document.getElementById('login-password-view');
+  // 1. Direct Login Controls
+  const loginIdentifier = document.getElementById('login-identifier');
+  const loginPassword = document.getElementById('login-password');
+  const btnLoginSubmit = document.getElementById('btn-login-submit');
 
-  // Sign Up Method Toggles
-  const signupMethodPwd = document.getElementById('signup-method-pwd');
-  const signupMethodOtp = document.getElementById('signup-method-otp');
-  const signupPwdView = document.getElementById('signup-password-view');
-  const signupOtpView = document.getElementById('signup-otp-view');
-
-  // Form Controls (Brevo OTP Log In)
-  const stepEmail = document.getElementById('auth-step-email');
-  const stepOtp = document.getElementById('auth-step-otp');
-  const emailInput = document.getElementById('auth-email-input');
-  const sendOtpBtn = document.getElementById('btn-auth-send-otp');
-  const verifyOtpBtn = document.getElementById('btn-auth-verify-otp');
-  const backToEmailBtn = document.getElementById('btn-auth-back');
-  const otpDigits = document.querySelectorAll('.otp-digit');
-  const devOtpNotice = document.getElementById('auth-dev-otp-notice');
-
-  // Password Log In Controls
-  const loginPwdEmail = document.getElementById('login-pwd-email');
-  const loginPwdPass = document.getElementById('login-pwd-pass');
-  const btnLoginWithPwd = document.getElementById('btn-login-with-pwd');
-
-  // Password Sign Up Controls
+  // 2. Sign Up Controls
+  const signupStepDetails = document.getElementById('signup-step-details');
+  const signupStepOtp = document.getElementById('signup-step-otp');
   const signupName = document.getElementById('signup-name');
+  const signupUsername = document.getElementById('signup-username');
   const signupEmail = document.getElementById('signup-email');
   const signupPassword = document.getElementById('signup-password');
-  const btnSignupSubmit = document.getElementById('btn-signup-submit');
+  const signupConfirmPassword = document.getElementById('signup-confirm-password');
+  const btnSignupRequestOtp = document.getElementById('btn-signup-request-otp');
+  const signupTargetEmailLabel = document.getElementById('signup-target-email-label');
+  const signupDevOtpNotice = document.getElementById('signup-dev-otp-notice');
+  const btnSignupResendOtp = document.getElementById('btn-signup-resend-otp');
+  const btnSignupBackToDetails = document.getElementById('btn-signup-back-to-details');
+  const btnSignupVerifyOtp = document.getElementById('btn-signup-verify-otp');
 
-  // Brevo OTP Sign Up Controls
-  const signupOtpName = document.getElementById('signup-otp-name');
-  const signupOtpEmail = document.getElementById('signup-otp-email');
-  const btnSignupSendOtp = document.getElementById('btn-signup-send-otp');
+  // 3. Reset Password Controls
+  const resetStepRequest = document.getElementById('reset-step-request');
+  const resetStepVerify = document.getElementById('reset-step-verify');
+  const resetIdentifier = document.getElementById('reset-identifier');
+  const btnResetSendOtp = document.getElementById('btn-reset-send-otp');
+  const resetTargetEmailLabel = document.getElementById('reset-target-email-label');
+  const resetDevOtpNotice = document.getElementById('reset-dev-otp-notice');
+  const resetNewPassword = document.getElementById('reset-new-password');
+  const resetConfirmPassword = document.getElementById('reset-confirm-password');
+  const btnResetBackToRequest = document.getElementById('btn-reset-back-to-request');
+  const btnResetSubmitNewPass = document.getElementById('btn-reset-submit-new-pass');
 
-  let otpOrigin = 'login';
-  let pendingNameForOtp = '';
+  // 4. Fast Brevo OTP Login Controls
+  const otpLoginStepEmail = document.getElementById('otp-login-step-email');
+  const otpLoginStepVerify = document.getElementById('otp-login-step-verify');
+  const otpLoginEmailInput = document.getElementById('otp-login-email-input');
+  const btnOtpLoginSend = document.getElementById('btn-otp-login-send');
+  const otpLoginTargetEmailLabel = document.getElementById('otp-login-target-email-label');
+  const otpLoginDevNotice = document.getElementById('otp-login-dev-notice');
+  const btnOtpLoginBackToEmail = document.getElementById('btn-otp-login-back-to-email');
+  const btnOtpLoginVerify = document.getElementById('btn-otp-login-verify');
 
-  function renderOtpNotice(otp, message) {
-    if (!devOtpNotice) return;
-    devOtpNotice.style.display = 'block';
+  // Pending State
+  let pendingSignupData = null;
+  let pendingResetEmail = '';
+  let pendingOtpLoginEmail = '';
+
+  // Password Visibility Toggles
+  setupPasswordToggle('btn-toggle-login-pass', 'login-password');
+  setupPasswordToggle('btn-toggle-signup-pass', 'signup-password');
+
+  function setupPasswordToggle(btnId, inputId) {
+    const btn = document.getElementById(btnId);
+    const input = document.getElementById(inputId);
+    if (!btn || !input) return;
+    btn.addEventListener('click', () => {
+      const isPass = input.type === 'password';
+      input.type = isPass ? 'text' : 'password';
+      btn.textContent = isPass ? '🙈' : '👁️';
+    });
+  }
+
+  // OTP Group Helper: Auto-advance, backspace, and paste support
+  function setupOtpDigits(digitsSelector, onComplete) {
+    const digits = document.querySelectorAll(digitsSelector);
+    digits.forEach((digit, index) => {
+      digit.addEventListener('input', (e) => {
+        if (digit.value.length >= 1) {
+          digit.value = digit.value.slice(-1);
+          if (index < digits.length - 1) {
+            digits[index + 1].focus();
+          }
+        }
+        const full = Array.from(digits).map(d => d.value).join('');
+        if (full.length === 6 && onComplete) onComplete(full);
+      });
+
+      digit.addEventListener('keydown', (e) => {
+        if (e.key === 'Backspace' && !digit.value && index > 0) {
+          digits[index - 1].focus();
+        }
+      });
+
+      digit.addEventListener('paste', (e) => {
+        e.preventDefault();
+        const text = (e.clipboardData || window.clipboardData).getData('text').trim().replace(/\D/g, '');
+        if (!text) return;
+        digits.forEach((d, i) => {
+          d.value = text[i] || '';
+        });
+        const lastIdx = Math.min(text.length, digits.length) - 1;
+        if (lastIdx >= 0) digits[lastIdx].focus();
+        if (text.length >= 6 && onComplete) onComplete(text.slice(0, 6));
+      });
+    });
+    return digits;
+  }
+
+  const signupOtpDigits = setupOtpDigits('.signup-otp-digit');
+  const resetOtpDigits = setupOtpDigits('.reset-otp-digit');
+  const fastOtpDigits = setupOtpDigits('.fast-otp-digit');
+
+  function clearOtpDigits(digits) {
+    digits.forEach(d => { d.value = ''; });
+  }
+
+  function getOtpValue(digits) {
+    let code = '';
+    digits.forEach(d => { code += d.value.trim(); });
+    return code;
+  }
+
+  function renderOtpDevNotice(container, otp, message, onAutofill) {
+    if (!container) return;
+    if (!otp) {
+      container.style.display = 'none';
+      return;
+    }
+    container.style.display = 'block';
     const isIpNotice = message && message.includes('unrecognised IP');
-    devOtpNotice.innerHTML = `
+    container.innerHTML = `
       <div style="display: flex; flex-direction: column; gap: 8px;">
         <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 6px;">
           <span style="font-size: 0.88rem; font-weight: 700; color: var(--accent-peach);">🔑 Verification Passcode:</span>
           <span class="otp-badge-code">${otp}</span>
         </div>
         <p style="font-size: 0.76rem; color: var(--text-muted); margin: 0; line-height: 1.4;">
-          ${isIpNotice ? 'Brevo security detected an unverified IP. Dev passcode is ready below:' : 'Use this 6-digit code to complete instant MongoDB authentication:'}
+          ${isIpNotice ? 'Brevo security detected an unverified IP. Dev passcode is ready below:' : 'Enter this 6-digit verification code to complete authentication:'}
         </p>
-        <button type="button" class="btn btn-primary btn-sm" id="btn-autofill-otp" style="width: 100%; margin-top: 4px; justify-content: center;">
-          ⚡ Auto-Fill Code & Verify
+        <button type="button" class="btn btn-primary btn-sm" id="btn-autofill-${container.id}" style="width: 100%; margin-top: 4px; justify-content: center; font-weight: 700;">
+          ⚡ Auto-Fill Passcode & Verify
         </button>
       </div>
     `;
 
-    document.getElementById('btn-autofill-otp')?.addEventListener('click', () => {
-      const str = otp.toString();
-      otpDigits.forEach((digit, i) => {
-        if (str[i]) digit.value = str[i];
-      });
-      playChime('click');
-      verifyOtpBtn?.click();
+    document.getElementById(`btn-autofill-${container.id}`)?.addEventListener('click', () => {
+      onAutofill(otp.toString());
     });
+  }
+
+  // View Switching
+  function showLoginPanel() {
+    if (authMainTabs) authMainTabs.style.display = 'flex';
+    if (panelLogin) panelLogin.style.display = 'block';
+    if (panelSignup) panelSignup.style.display = 'none';
+    if (panelReset) panelReset.style.display = 'none';
+    if (panelOtpLogin) panelOtpLogin.style.display = 'none';
+
+    tabBtnLogin?.classList.add('btn-primary');
+    tabBtnLogin?.classList.remove('btn-secondary');
+    tabBtnSignup?.classList.add('btn-secondary');
+    tabBtnSignup?.classList.remove('btn-primary');
+  }
+
+  function showSignupPanel() {
+    if (authMainTabs) authMainTabs.style.display = 'flex';
+    if (panelLogin) panelLogin.style.display = 'none';
+    if (panelSignup) panelSignup.style.display = 'block';
+    if (panelReset) panelReset.style.display = 'none';
+    if (panelOtpLogin) panelOtpLogin.style.display = 'none';
+
+    // Show details step by default
+    if (signupStepDetails) signupStepDetails.style.display = 'block';
+    if (signupStepOtp) signupStepOtp.style.display = 'none';
+
+    tabBtnSignup?.classList.add('btn-primary');
+    tabBtnSignup?.classList.remove('btn-secondary');
+    tabBtnLogin?.classList.add('btn-secondary');
+    tabBtnLogin?.classList.remove('btn-primary');
+  }
+
+  function showResetPanel() {
+    if (authMainTabs) authMainTabs.style.display = 'none';
+    if (panelLogin) panelLogin.style.display = 'none';
+    if (panelSignup) panelSignup.style.display = 'none';
+    if (panelReset) panelReset.style.display = 'block';
+    if (panelOtpLogin) panelOtpLogin.style.display = 'none';
+
+    if (resetStepRequest) resetStepRequest.style.display = 'block';
+    if (resetStepVerify) resetStepVerify.style.display = 'none';
+    if (resetIdentifier) resetIdentifier.focus();
+  }
+
+  function showOtpLoginPanel() {
+    if (authMainTabs) authMainTabs.style.display = 'none';
+    if (panelLogin) panelLogin.style.display = 'none';
+    if (panelSignup) panelSignup.style.display = 'none';
+    if (panelReset) panelReset.style.display = 'none';
+    if (panelOtpLogin) panelOtpLogin.style.display = 'block';
+
+    if (otpLoginStepEmail) otpLoginStepEmail.style.display = 'block';
+    if (otpLoginStepVerify) otpLoginStepVerify.style.display = 'none';
+    if (otpLoginEmailInput) otpLoginEmailInput.focus();
   }
 
   function openAuthModal(mode = 'login') {
     if (mode === 'signup') {
       showSignupPanel();
+    } else if (mode === 'reset') {
+      showResetPanel();
     } else {
       showLoginPanel();
     }
     authModal?.classList.add('active');
-  }
-
-  function showLoginPanel() {
-    if (panelLogin && panelSignup) {
-      panelLogin.style.display = 'block';
-      panelSignup.style.display = 'none';
-      tabBtnLogin?.classList.add('btn-primary');
-      tabBtnLogin?.classList.remove('btn-secondary');
-      tabBtnSignup?.classList.add('btn-secondary');
-      tabBtnSignup?.classList.remove('btn-primary');
-    }
-  }
-
-  function showSignupPanel() {
-    if (panelLogin && panelSignup) {
-      panelLogin.style.display = 'none';
-      panelSignup.style.display = 'block';
-      tabBtnSignup?.classList.add('btn-primary');
-      tabBtnSignup?.classList.remove('btn-secondary');
-      tabBtnLogin?.classList.add('btn-secondary');
-      tabBtnLogin?.classList.remove('btn-primary');
-    }
   }
 
   // Header button triggers
@@ -1471,7 +1593,7 @@ function setupAuthModalEvents() {
     }
   });
 
-  // Modal Tab switching
+  // Modal Top Tabs Navigation
   tabBtnLogin?.addEventListener('click', showLoginPanel);
   tabBtnSignup?.addEventListener('click', showSignupPanel);
   linkSwitchToSignup?.addEventListener('click', (e) => {
@@ -1482,86 +1604,91 @@ function setupAuthModalEvents() {
     e.preventDefault();
     showLoginPanel();
   });
-
-  // Log In Method Toggles
-  loginMethodOtp?.addEventListener('click', () => {
-    loginMethodOtp.classList.add('active');
-    loginMethodPwd.classList.remove('active');
-    if (loginOtpView && loginPwdView) {
-      loginOtpView.style.display = 'block';
-      loginPwdView.style.display = 'none';
-    }
+  linkForgotPassword?.addEventListener('click', (e) => {
+    e.preventDefault();
+    showResetPanel();
   });
-
-  loginMethodPwd?.addEventListener('click', () => {
-    loginMethodPwd.classList.add('active');
-    loginMethodOtp.classList.remove('active');
-    if (loginOtpView && loginPwdView) {
-      loginOtpView.style.display = 'none';
-      loginPwdView.style.display = 'block';
-    }
+  linkResetToLogin?.addEventListener('click', (e) => {
+    e.preventDefault();
+    showLoginPanel();
   });
+  btnResetCancel?.addEventListener('click', showLoginPanel);
+  btnSwitchToOtpLogin?.addEventListener('click', showOtpLoginPanel);
+  btnOtpLoginBackToPwd?.addEventListener('click', showLoginPanel);
 
-  // Sign Up Method Toggles
-  signupMethodPwd?.addEventListener('click', () => {
-    signupMethodPwd.classList.add('active');
-    signupMethodOtp.classList.remove('active');
-    if (signupPwdView && signupOtpView) {
-      signupPwdView.style.display = 'block';
-      signupOtpView.style.display = 'none';
-    }
-  });
+  /* ==================================================
+     1. DIRECT LOG IN (Username or Gmail + Password)
+  ================================================== */
+  async function handleDirectLogin() {
+    const identifier = loginIdentifier?.value.trim();
+    const password = loginPassword?.value;
 
-  signupMethodOtp?.addEventListener('click', () => {
-    signupMethodOtp.classList.add('active');
-    signupMethodPwd.classList.remove('active');
-    if (signupPwdView && signupOtpView) {
-      signupPwdView.style.display = 'none';
-      signupOtpView.style.display = 'block';
-    }
-  });
-
-  // Log In with Password
-  btnLoginWithPwd?.addEventListener('click', async () => {
-    const email = loginPwdEmail?.value.trim();
-    const password = loginPwdPass?.value;
-
-    if (!email || !password) {
-      showToast('Please enter both email and password.', 'warning');
+    if (!identifier || !password) {
+      showToast('Please enter both your Username/Gmail and password.', 'warning');
       return;
     }
 
     try {
-      btnLoginWithPwd.textContent = 'Logging In...';
-      btnLoginWithPwd.setAttribute('disabled', 'true');
-      const res = await loginWithPassword(email, password);
-      btnLoginWithPwd.textContent = '🔑 Log In with Password';
-      btnLoginWithPwd.removeAttribute('disabled');
+      btnLoginSubmit.textContent = 'Logging In...';
+      btnLoginSubmit.setAttribute('disabled', 'true');
+
+      const res = await loginUser(identifier, password);
+
+      btnLoginSubmit.textContent = '🔑 Log In Directly';
+      btnLoginSubmit.removeAttribute('disabled');
 
       authModal?.classList.remove('active');
       updateAuthUI();
       playChime('success');
-      showToast(`Welcome back, ${res.user?.name || res.user?.email}!`, 'success');
+      showToast(`Welcome back, ${res.user?.name || res.user?.username || res.user?.email}!`, 'success');
 
       await migrateGuestItemsToUser(getAuthToken());
       refreshHistoryView();
       refreshSavedView();
     } catch (err) {
-      btnLoginWithPwd.textContent = '🔑 Log In with Password';
-      btnLoginWithPwd.removeAttribute('disabled');
+      btnLoginSubmit.textContent = '🔑 Log In Directly';
+      btnLoginSubmit.removeAttribute('disabled');
       playChime('error');
       showToast(err.message, 'error');
     }
+  }
+
+  btnLoginSubmit?.addEventListener('click', handleDirectLogin);
+  loginPassword?.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') handleDirectLogin();
+  });
+  loginIdentifier?.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') handleDirectLogin();
   });
 
-  // Sign Up with Password
-  btnSignupSubmit?.addEventListener('click', async () => {
-    const name = signupName?.value.trim();
-    const email = signupEmail?.value.trim();
+  /* ==================================================
+     2. SIGN UP: STEP 1 (REQUEST BREVO OTP)
+  ================================================== */
+  btnSignupRequestOtp?.addEventListener('click', async () => {
+    const name = signupName?.value.trim() || '';
+    const username = signupUsername?.value.trim().toLowerCase();
+    const email = signupEmail?.value.trim().toLowerCase();
     const password = signupPassword?.value;
+    const confirmPass = signupConfirmPassword?.value;
 
-    if (!email || !password) {
-      showToast('Please enter both email and password.', 'warning');
+    if (!username || !email || !password) {
+      showToast('Username, Gmail, and Password are required.', 'warning');
+      return;
+    }
+
+    if (username.length < 3) {
+      showToast('Username must be at least 3 characters.', 'warning');
+      return;
+    }
+
+    if (username.length > 35) {
+      showToast('Username must be 35 characters or less.', 'warning');
+      return;
+    }
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      showToast('Please enter a valid Gmail / email address.', 'warning');
       return;
     }
 
@@ -1570,184 +1697,318 @@ function setupAuthModalEvents() {
       return;
     }
 
+    if (password !== confirmPass) {
+      showToast('Passwords do not match. Please re-check.', 'warning');
+      return;
+    }
+
     try {
-      btnSignupSubmit.textContent = 'Creating Account...';
-      btnSignupSubmit.setAttribute('disabled', 'true');
-      const res = await registerWithPassword(name, email, password);
-      btnSignupSubmit.textContent = '✨ Create Account & Sign In';
-      btnSignupSubmit.removeAttribute('disabled');
+      btnSignupRequestOtp.textContent = 'Sending Verification Code...';
+      btnSignupRequestOtp.setAttribute('disabled', 'true');
 
-      authModal?.classList.remove('active');
-      updateAuthUI();
+      const res = await requestSignupOtp({ username, name, email, password });
+
+      pendingSignupData = { username, name, email, password };
+
+      btnSignupRequestOtp.textContent = '✉️ Verify Gmail via Brevo OTP';
+      btnSignupRequestOtp.removeAttribute('disabled');
+
+      // Transition to Step 2 (OTP code input)
+      if (signupStepDetails) signupStepDetails.style.display = 'none';
+      if (signupStepOtp) signupStepOtp.style.display = 'block';
+      if (signupTargetEmailLabel) signupTargetEmailLabel.textContent = email;
+
+      clearOtpDigits(signupOtpDigits);
+      signupOtpDigits[0]?.focus();
+
+      if (res.devOtp) {
+        renderOtpDevNotice(signupDevOtpNotice, res.devOtp, res.message, (code) => {
+          signupOtpDigits.forEach((d, i) => { d.value = code[i] || ''; });
+          btnSignupVerifyOtp?.click();
+        });
+      } else if (signupDevOtpNotice) {
+        signupDevOtpNotice.style.display = 'none';
+      }
+
       playChime('success');
-      showToast(`Account created! Welcome, ${res.user?.name || res.user?.email}!`, 'success');
-
-      await migrateGuestItemsToUser(getAuthToken());
-      refreshHistoryView();
-      refreshSavedView();
+      showToast(res.message || 'Verification code sent to your Gmail via Brevo!', 'success');
     } catch (err) {
-      btnSignupSubmit.textContent = '✨ Create Account & Sign In';
-      btnSignupSubmit.removeAttribute('disabled');
+      btnSignupRequestOtp.textContent = '✉️ Verify Gmail via Brevo OTP';
+      btnSignupRequestOtp.removeAttribute('disabled');
       playChime('error');
       showToast(err.message, 'error');
     }
   });
 
-  // Fast Sign Up via Brevo OTP
-  btnSignupSendOtp?.addEventListener('click', async () => {
-    const name = signupOtpName?.value.trim() || '';
-    const email = signupOtpEmail?.value.trim();
+  // Resend Sign Up OTP
+  btnSignupResendOtp?.addEventListener('click', async () => {
+    if (!pendingSignupData) {
+      showToast('Please fill the registration form first.', 'warning');
+      return;
+    }
+    try {
+      btnSignupResendOtp.textContent = 'Resending...';
+      const res = await requestSignupOtp(pendingSignupData);
+      btnSignupResendOtp.textContent = 'Resend Code';
+
+      if (res.devOtp) {
+        renderOtpDevNotice(signupDevOtpNotice, res.devOtp, res.message, (code) => {
+          signupOtpDigits.forEach((d, i) => { d.value = code[i] || ''; });
+          btnSignupVerifyOtp?.click();
+        });
+      }
+      playChime('success');
+      showToast('New verification code sent via Brevo!', 'success');
+    } catch (err) {
+      btnSignupResendOtp.textContent = 'Resend Code';
+      showToast(err.message, 'error');
+    }
+  });
+
+  // Back from OTP to registration details
+  btnSignupBackToDetails?.addEventListener('click', () => {
+    if (signupStepOtp) signupStepOtp.style.display = 'none';
+    if (signupStepDetails) signupStepDetails.style.display = 'block';
+  });
+
+  /* ==================================================
+     2. SIGN UP: STEP 2 (VERIFY BREVO OTP & CREATE ACCOUNT)
+  ================================================== */
+  btnSignupVerifyOtp?.addEventListener('click', async () => {
+    const enteredOtp = getOtpValue(signupOtpDigits);
+    if (enteredOtp.length < 6) {
+      showToast('Please enter all 6 digits of the verification code sent to your Gmail.', 'warning');
+      return;
+    }
+
+    if (!pendingSignupData || !pendingSignupData.email) {
+      showToast('Signup session expired. Please start registration again.', 'error');
+      showSignupPanel();
+      return;
+    }
+
+    try {
+      btnSignupVerifyOtp.textContent = 'Verifying & Setting Up...';
+      btnSignupVerifyOtp.setAttribute('disabled', 'true');
+
+      const res = await verifySignupOtp({
+        email: pendingSignupData.email,
+        otp: enteredOtp,
+      });
+
+      btnSignupVerifyOtp.textContent = '✨ Verify & Set Account';
+      btnSignupVerifyOtp.removeAttribute('disabled');
+
+      authModal?.classList.remove('active');
+      updateAuthUI();
+      playChime('success');
+      showToast(`Account created and Gmail verified! Welcome, ${res.user?.username || res.user?.name || res.user?.email}!`, 'success');
+
+      await migrateGuestItemsToUser(getAuthToken());
+      refreshHistoryView();
+      refreshSavedView();
+    } catch (err) {
+      btnSignupVerifyOtp.textContent = '✨ Verify & Set Account';
+      btnSignupVerifyOtp.removeAttribute('disabled');
+      playChime('error');
+      showToast(err.message, 'error');
+    }
+  });
+
+  /* ==================================================
+     3. RESET PASSWORD: STEP 1 (REQUEST BREVO CODE)
+  ================================================== */
+  btnResetSendOtp?.addEventListener('click', async () => {
+    const target = resetIdentifier?.value.trim();
+    if (!target) {
+      showToast('Please enter your username or registered Gmail address.', 'warning');
+      return;
+    }
+
+    try {
+      btnResetSendOtp.textContent = 'Sending Reset Code...';
+      btnResetSendOtp.setAttribute('disabled', 'true');
+
+      const res = await requestPasswordReset(target);
+      pendingResetEmail = res.email || target;
+
+      btnResetSendOtp.textContent = '✉️ Send Password Reset Code';
+      btnResetSendOtp.removeAttribute('disabled');
+
+      // Transition to Step 2
+      if (resetStepRequest) resetStepRequest.style.display = 'none';
+      if (resetStepVerify) resetStepVerify.style.display = 'block';
+      if (resetTargetEmailLabel) {
+        resetTargetEmailLabel.textContent = res.maskedEmail || res.email || target;
+      }
+
+      clearOtpDigits(resetOtpDigits);
+      resetOtpDigits[0]?.focus();
+
+      if (res.devOtp) {
+        renderOtpDevNotice(resetDevOtpNotice, res.devOtp, res.message, (code) => {
+          resetOtpDigits.forEach((d, i) => { d.value = code[i] || ''; });
+          resetNewPassword?.focus();
+        });
+      } else if (resetDevOtpNotice) {
+        resetDevOtpNotice.style.display = 'none';
+      }
+
+      playChime('success');
+      showToast(res.message || 'Password reset code sent to your registered Gmail!', 'success');
+    } catch (err) {
+      btnResetSendOtp.textContent = '✉️ Send Password Reset Code';
+      btnResetSendOtp.removeAttribute('disabled');
+      playChime('error');
+      showToast(err.message, 'error');
+    }
+  });
+
+  btnResetBackToRequest?.addEventListener('click', () => {
+    if (resetStepVerify) resetStepVerify.style.display = 'none';
+    if (resetStepRequest) resetStepRequest.style.display = 'block';
+  });
+
+  /* ==================================================
+     3. RESET PASSWORD: STEP 2 (VERIFY CODE & SAVE NEW PASSWORD)
+  ================================================== */
+  btnResetSubmitNewPass?.addEventListener('click', async () => {
+    const enteredOtp = getOtpValue(resetOtpDigits);
+    const newPass = resetNewPassword?.value;
+    const confirmPass = resetConfirmPassword?.value;
+
+    if (enteredOtp.length < 6) {
+      showToast('Please enter the 6-digit reset code from your email.', 'warning');
+      return;
+    }
+
+    if (!newPass || newPass.length < 6) {
+      showToast('New password must be at least 6 characters long.', 'warning');
+      return;
+    }
+
+    if (newPass !== confirmPass) {
+      showToast('New passwords do not match.', 'warning');
+      return;
+    }
+
+    if (!pendingResetEmail) {
+      showToast('Reset request expired. Please request a new code.', 'error');
+      showResetPanel();
+      return;
+    }
+
+    try {
+      btnResetSubmitNewPass.textContent = 'Saving Password...';
+      btnResetSubmitNewPass.setAttribute('disabled', 'true');
+
+      const res = await confirmPasswordReset({
+        email: pendingResetEmail,
+        otp: enteredOtp,
+        newPassword: newPass,
+      });
+
+      btnResetSubmitNewPass.textContent = '🔒 Save Password & Sign In';
+      btnResetSubmitNewPass.removeAttribute('disabled');
+
+      authModal?.classList.remove('active');
+      updateAuthUI();
+      playChime('success');
+      showToast('Password updated successfully! Welcome back.', 'success');
+
+      await migrateGuestItemsToUser(getAuthToken());
+      refreshHistoryView();
+      refreshSavedView();
+    } catch (err) {
+      btnResetSubmitNewPass.textContent = '🔒 Save Password & Sign In';
+      btnResetSubmitNewPass.removeAttribute('disabled');
+      playChime('error');
+      showToast(err.message, 'error');
+    }
+  });
+
+  /* ==================================================
+     4. FAST BREVO OTP (PASSWORDLESS)
+  ================================================== */
+  btnOtpLoginSend?.addEventListener('click', async () => {
+    const email = otpLoginEmailInput?.value.trim().toLowerCase();
     if (!email) {
       showToast('Please enter your email address.', 'warning');
       return;
     }
 
     try {
-      btnSignupSendOtp.textContent = 'Sending Code...';
-      btnSignupSendOtp.setAttribute('disabled', 'true');
-      const res = await requestOtp(email);
-      pendingEmailForOtp = email;
-      pendingNameForOtp = name;
-      otpOrigin = 'signup';
-      btnSignupSendOtp.textContent = '✉️ Send Verification Code';
-      btnSignupSendOtp.removeAttribute('disabled');
+      btnOtpLoginSend.textContent = 'Sending Passcode...';
+      btnOtpLoginSend.setAttribute('disabled', 'true');
 
-      // Switch to OTP code entry view
-      showLoginPanel();
-      loginMethodOtp?.click();
-      if (stepEmail && stepOtp) {
-        stepEmail.style.display = 'none';
-        stepOtp.style.display = 'block';
-        document.getElementById('auth-target-email-label').textContent = email;
-      }
-      otpDigits[0]?.focus();
+      const res = await requestOtp(email);
+      pendingOtpLoginEmail = email;
+
+      btnOtpLoginSend.textContent = '✉️ Send 6-Digit Passcode';
+      btnOtpLoginSend.removeAttribute('disabled');
+
+      if (otpLoginStepEmail) otpLoginStepEmail.style.display = 'none';
+      if (otpLoginStepVerify) otpLoginStepVerify.style.display = 'block';
+      if (otpLoginTargetEmailLabel) otpLoginTargetEmailLabel.textContent = email;
+
+      clearOtpDigits(fastOtpDigits);
+      fastOtpDigits[0]?.focus();
 
       if (res.devOtp) {
-        renderOtpNotice(res.devOtp, res.message);
+        renderOtpDevNotice(otpLoginDevNotice, res.devOtp, res.message, (code) => {
+          fastOtpDigits.forEach((d, i) => { d.value = code[i] || ''; });
+          btnOtpLoginVerify?.click();
+        });
+      } else if (otpLoginDevNotice) {
+        otpLoginDevNotice.style.display = 'none';
       }
 
       playChime('success');
-      showToast(res.message || 'Verification code sent via Brevo!', 'success');
+      showToast(res.message || 'Passcode dispatched via Brevo!', 'success');
     } catch (err) {
-      btnSignupSendOtp.textContent = '✉️ Send Verification Code';
-      btnSignupSendOtp.removeAttribute('disabled');
+      btnOtpLoginSend.textContent = '✉️ Send 6-Digit Passcode';
+      btnOtpLoginSend.removeAttribute('disabled');
       playChime('error');
       showToast(err.message, 'error');
     }
   });
 
-  // Request OTP via Brevo API (in Log In view)
-  if (sendOtpBtn && emailInput) {
-    sendOtpBtn.addEventListener('click', async () => {
-      const email = emailInput.value.trim();
-      if (!email) {
-        showToast('Please enter your email address.', 'warning');
-        return;
-      }
-
-      try {
-        sendOtpBtn.textContent = 'Sending...';
-        sendOtpBtn.setAttribute('disabled', 'true');
-        const res = await requestOtp(email);
-        pendingEmailForOtp = email;
-        pendingNameForOtp = '';
-        otpOrigin = 'login';
-
-        sendOtpBtn.textContent = 'Send Verification Code';
-        sendOtpBtn.removeAttribute('disabled');
-
-        if (stepEmail && stepOtp) {
-          stepEmail.style.display = 'none';
-          stepOtp.style.display = 'block';
-          document.getElementById('auth-target-email-label').textContent = email;
-        }
-
-        otpDigits[0]?.focus();
-
-        if (res.devOtp) {
-          renderOtpNotice(res.devOtp, res.message);
-        }
-
-        playChime('success');
-        showToast(res.message || 'Verification code sent via Brevo!', 'success');
-      } catch (err) {
-        sendOtpBtn.textContent = 'Send Verification Code';
-        sendOtpBtn.removeAttribute('disabled');
-        playChime('error');
-        showToast(err.message, 'error');
-      }
-    });
-  }
-
-  // Auto-advance OTP digit input boxes
-  otpDigits.forEach((digit, index) => {
-    digit.addEventListener('input', () => {
-      if (digit.value.length >= 1) {
-        digit.value = digit.value.slice(-1);
-        if (index < otpDigits.length - 1) {
-          otpDigits[index + 1].focus();
-        }
-      }
-    });
-
-    digit.addEventListener('keydown', (e) => {
-      if (e.key === 'Backspace' && !digit.value && index > 0) {
-        otpDigits[index - 1].focus();
-      }
-    });
+  btnOtpLoginBackToEmail?.addEventListener('click', () => {
+    if (otpLoginStepVerify) otpLoginStepVerify.style.display = 'none';
+    if (otpLoginStepEmail) otpLoginStepEmail.style.display = 'block';
   });
 
-  // Verify OTP Code
-  if (verifyOtpBtn) {
-    verifyOtpBtn.addEventListener('click', async () => {
-      let enteredOtp = '';
-      otpDigits.forEach((d) => (enteredOtp += d.value));
+  btnOtpLoginVerify?.addEventListener('click', async () => {
+    const enteredOtp = getOtpValue(fastOtpDigits);
+    if (enteredOtp.length < 6) {
+      showToast('Please enter all 6 digits of your passcode.', 'warning');
+      return;
+    }
 
-      if (enteredOtp.length < 6) {
-        showToast('Please enter all 6 digits of your verification code.', 'warning');
-        return;
-      }
+    try {
+      btnOtpLoginVerify.textContent = 'Verifying...';
+      btnOtpLoginVerify.setAttribute('disabled', 'true');
 
-      try {
-        verifyOtpBtn.textContent = 'Verifying...';
-        verifyOtpBtn.setAttribute('disabled', 'true');
+      const res = await verifyOtp(pendingOtpLoginEmail, enteredOtp);
 
-        const res = await verifyOtp(pendingEmailForOtp, enteredOtp, pendingNameForOtp);
+      btnOtpLoginVerify.textContent = 'Verify & Log In';
+      btnOtpLoginVerify.removeAttribute('disabled');
 
-        verifyOtpBtn.textContent = 'Verify & Log In';
-        verifyOtpBtn.removeAttribute('disabled');
+      authModal?.classList.remove('active');
+      updateAuthUI();
+      playChime('success');
+      showToast(`Welcome back, ${res.user?.name || res.user?.username || res.user?.email}!`, 'success');
 
-        authModal?.classList.remove('active');
-        updateAuthUI();
-        playChime('success');
-        showToast(`Welcome, ${res.user?.name || res.user?.email || 'User'}!`, 'success');
-
-        await migrateGuestItemsToUser(getAuthToken());
-        refreshHistoryView();
-        refreshSavedView();
-      } catch (err) {
-        verifyOtpBtn.textContent = 'Verify & Log In';
-        verifyOtpBtn.removeAttribute('disabled');
-        playChime('error');
-        showToast(err.message, 'error');
-      }
-    });
-  }
-
-  if (backToEmailBtn) {
-    backToEmailBtn.addEventListener('click', () => {
-      if (stepEmail && stepOtp) {
-        stepOtp.style.display = 'none';
-        if (devOtpNotice) devOtpNotice.style.display = 'none';
-        if (otpOrigin === 'signup') {
-          showSignupPanel();
-          signupMethodOtp?.click();
-        } else {
-          stepEmail.style.display = 'block';
-        }
-      }
-    });
-  }
+      await migrateGuestItemsToUser(getAuthToken());
+      refreshHistoryView();
+      refreshSavedView();
+    } catch (err) {
+      btnOtpLoginVerify.textContent = 'Verify & Log In';
+      btnOtpLoginVerify.removeAttribute('disabled');
+      playChime('error');
+      showToast(err.message, 'error');
+    }
+  });
 }
 
 function updateAuthUI() {
@@ -1758,8 +2019,9 @@ function updateAuthUI() {
 
   if (user) {
     if (loginBtn) {
-      loginBtn.innerHTML = `👤 ${escapeHtml(user.name || user.email.split('@')[0])} <span style="font-size:0.7em; color:var(--accent-emerald);">●</span>`;
-      loginBtn.title = `Signed in as ${user.email}`;
+      const displayName = user.name || (user.username ? `@${user.username}` : user.email.split('@')[0]);
+      loginBtn.innerHTML = `👤 ${escapeHtml(displayName)} <span style="font-size:0.7em; color:var(--accent-emerald);">●</span>`;
+      loginBtn.title = `Signed in as ${user.email} (${user.username || 'user'})`;
     }
     if (signupBtn) signupBtn.style.display = 'none';
     if (logoutBtn) logoutBtn.style.display = 'inline-flex';

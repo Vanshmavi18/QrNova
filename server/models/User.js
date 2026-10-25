@@ -9,6 +9,15 @@ const userSchema = new mongoose.Schema({
     trim: true,
     match: [/^\S+@\S+\.\S+$/, 'Please enter a valid email address'],
   },
+  username: {
+    type: String,
+    unique: true,
+    sparse: true,
+    trim: true,
+    lowercase: true,
+    minlength: 3,
+    maxlength: 35,
+  },
   name: {
     type: String,
     trim: true,
@@ -17,6 +26,10 @@ const userSchema = new mongoose.Schema({
   password: {
     type: String,
     default: null,
+  },
+  isEmailVerified: {
+    type: Boolean,
+    default: false,
   },
   preferences: {
     theme: { type: String, default: 'dark', enum: ['dark', 'light', 'high-contrast'] },

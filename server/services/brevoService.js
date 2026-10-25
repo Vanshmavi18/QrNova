@@ -32,11 +32,25 @@ async function checkBrevoStatus() {
  * @param {string} otp - 6-digit one-time password
  * @returns {Promise<{success: boolean, messageId?: string, devOtp?: string}>}
  */
-async function sendOtpEmail(toEmail, otp) {
+async function sendOtpEmail(toEmail, otp, purpose = 'verify') {
   const apiKey = process.env.BREVO_API_KEY;
   // Ensure we use the verified Brevo sender email
   const senderEmail = process.env.BREVO_SENDER_EMAIL || 'vanshmavi018@gmail.com';
   const senderName = process.env.BREVO_SENDER_NAME || 'QrNova Security';
+
+  let subjectTitle = 'Verify Your Email';
+  let emailSubject = `Your QrNova Verification Code: ${otp}`;
+  let purposeDescription = 'You requested a one-time passcode to authenticate with your QrNova account. Enter the 6-digit code below:';
+
+  if (purpose === 'signup') {
+    subjectTitle = 'Verify Your Gmail Address';
+    emailSubject = `Verify Your Gmail for QrNova: ${otp}`;
+    purposeDescription = 'Welcome to QrNova! Please verify your Gmail address to activate your account and set your password:';
+  } else if (purpose === 'reset') {
+    subjectTitle = 'Reset Your Password';
+    emailSubject = `QrNova Password Reset Code: ${otp}`;
+    purposeDescription = 'You requested to reset your QrNova password. Enter the 6-digit verification code below to set your new password:';
+  }
 
   // Check if API key is configured and valid
   const isKeyConfigured = apiKey && apiKey.trim() !== '' && !apiKey.includes('your_brevo_api_key_here');
@@ -45,7 +59,7 @@ async function sendOtpEmail(toEmail, otp) {
     console.log(`\n==================================================`);
     console.log(`🔑 [DEV MODE - BREVO API KEY NOT CONFIGURED]`);
     console.log(`📧 Target Email: ${toEmail}`);
-    console.log(`⚡ Login OTP:   >>> ${otp} <<< (Valid for 5 minutes)`);
+    console.log(`⚡ ${purpose.toUpperCase()} OTP:   >>> ${otp} <<< (Valid for 5 minutes)`);
     console.log(`ℹ️ Add your Brevo API key in .env to deliver real emails.`);
     console.log(`==================================================\n`);
     return {
@@ -83,13 +97,13 @@ async function sendOtpEmail(toEmail, otp) {
           <div class="brand-icon">QR</div>
           <span class="brand-text">Qr<span>Nova</span></span>
         </div>
-        <h2>Verify Your Email</h2>
-        <p>You requested a one-time passcode to sign in to your QrNova account. Enter the 6-digit code below:</p>
+        <h2>${subjectTitle}</h2>
+        <p>${purposeDescription}</p>
         <div class="otp-box">
           <div class="otp-code">${otp}</div>
           <div class="badge-timer">⏳ Valid for 5 minutes</div>
         </div>
-        <p>If you didn't request this code, you can safely ignore this email. No password is required.</p>
+        <p>If you didn't request this code, you can safely ignore this email.</p>
         <div class="footer">
           <p>Sent securely via Brevo Transactional Engine • QrNova QR Platform & Security Engine</p>
         </div>
@@ -109,7 +123,7 @@ async function sendOtpEmail(toEmail, otp) {
       body: JSON.stringify({
         sender: { name: senderName, email: senderEmail },
         to: [{ email: toEmail }],
-        subject: `Your QrNova Verification Code: ${otp}`,
+        subject: emailSubject,
         htmlContent: htmlContent,
       }),
     });
@@ -122,13 +136,16 @@ async function sendOtpEmail(toEmail, otp) {
     }
 
     console.log(`📧 Brevo email successfully dispatched to ${toEmail}. Message ID:`, data.messageId || 'sent');
-    return { success: true, messageId: data.messageId };
+    return { success: true, isDelivered: true, messageId: data.messageId };
   } catch (error) {
     console.error('❌ Brevo Email Dispatch Error:', error.message);
     console.log(`⚡ Fallback Verification OTP for ${toEmail}: >>> ${otp} <<<`);
     return {
       success: true,
-      message: `Verification code generated (${error.message})`,
+      isDelivered: false,
+      message: error.message.includes('unrecognised IP')
+        ? 'Brevo detected a new IP address. Verification passcode is ready below for instant access:'
+        : `Verification code generated (${error.message})`,
       devOtp: otp,
     };
   }
