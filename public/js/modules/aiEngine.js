@@ -7,12 +7,14 @@
  */
 export function detectContentType(raw) {
   if (!raw) return 'text';
-  const str = raw.trim();
+  const str = raw.trim().replace(/^[<"']|[>"']$/g, '');
 
   if (str.startsWith('QREncrypted:v1:')) return 'encrypted';
   if (str.startsWith('WIFI:')) return 'wifi';
   if (str.startsWith('BEGIN:VCARD')) return 'vcard';
-  if (str.startsWith('http://') || str.startsWith('https://')) return 'url';
+  if (/^https?:\/\//i.test(str)) return 'url';
+  if (/^([a-zA-Z0-9-]+\.)+[a-zA-Z]{2,}(:\d+)?(\/.*)?$/i.test(str)) return 'url';
+  if (/^localhost(:\d+)?(\/.*)?$/i.test(str)) return 'url';
   if (str.startsWith('geo:')) return 'geo';
   if (str.startsWith('tel:')) return 'phone';
   if (str.startsWith('mailto:')) return 'email';

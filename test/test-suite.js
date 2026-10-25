@@ -153,13 +153,43 @@ async function runTestSuite() {
   console.log(`   ✅ QR created with ID: ${createdQrId}, ShortCode: ${dynamicShortCode}`);
 
   // 8. Dynamic QR Link Resolver & Expiry Check
-  console.log('\n8️⃣  Testing Dynamic QR Link Resolver (GET /api/qr/dynamic/:code)...');
+  console.log('\n8️⃣  Testing Dynamic QR Link Resolver & Direct Redirection...');
   const dynRes = await fetch(`${BASE_URL}/api/qr/dynamic/${dynamicShortCode}`);
   const dynData = await dynRes.json();
   if (!dynData.success || dynData.expired !== false) {
     throw new Error(dynData.error || 'Dynamic resolver failed');
   }
   console.log(`   ✅ Dynamic link resolved: "${dynData.item?.title}", Active (expired: false)`);
+
+  // 8b. Direct Web URL Dynamic Redirection (HTTP 302)
+  const urlQrRes = await fetch(`${BASE_URL}/api/qr`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${jwtToken}` },
+    body: JSON.stringify({
+      title: 'Direct Link Website Test',
+      type: 'url',
+      payload: 'https://example.com/target-page',
+      isSaved: true,
+      source: 'generated',
+    }),
+  });
+  const urlQrData = await urlQrRes.json();
+  const urlShortCode = urlQrData.item?.shortCode;
+  const redirectRes = await fetch(`${BASE_URL}/d/${urlShortCode}`, { redirect: 'manual' });
+  if (redirectRes.status !== 302 && redirectRes.status !== 307) {
+    throw new Error(`Expected direct redirect (302/307), got ${redirectRes.status}`);
+  }
+  const redirectLocation = redirectRes.headers.get('location');
+  if (redirectLocation !== 'https://example.com/target-page') {
+    throw new Error(`Expected redirect to https://example.com/target-page, got ${redirectLocation}`);
+  }
+  console.log(`   ✅ Direct link /d/${urlShortCode} successfully redirected (HTTP 302) to ${redirectLocation}`);
+
+  // Clean up extra URL QR
+  await fetch(`${BASE_URL}/api/qr/${urlQrData.item._id}`, {
+    method: 'DELETE',
+    headers: { Authorization: `Bearer ${jwtToken}` },
+  });
 
   // 9. My QR Vault Persistence and Isolation Check
   console.log('\n9️⃣  Testing "My QR" Vault Persistence & User Isolation (GET /api/qr?isSaved=true)...');

@@ -154,12 +154,17 @@ export async function scanImageFile(file) {
  */
 export function evaluateUrlSecurity(text) {
   if (!text) return { isSafe: true, warnings: [], isUrl: false };
-  let trimmed = text.trim();
+  let trimmed = text.trim().replace(/^[<"']|[>"']$/g, '');
 
-  // Normalize URLs without protocol (e.g. www.domain.com or domain.com/path)
-  if (!/^https?:\/\//i.test(trimmed)) {
-    if (/^([a-zA-Z0-9-]+\.)+[a-zA-Z]{2,}(\/.*)?$/i.test(trimmed)) {
-      trimmed = 'https://' + trimmed;
+  let candidate = trimmed;
+  if (!/^https?:\/\//i.test(candidate)) {
+    const isLikelyUrl =
+      /^([a-zA-Z0-9-]+\.)+[a-zA-Z]{2,}(:\d+)?(\/.*)?$/i.test(candidate) ||
+      /^(\d{1,3}\.){3}\d{1,3}(:\d+)?(\/.*)?$/.test(candidate) ||
+      /^localhost(:\d+)?(\/.*)?$/i.test(candidate);
+
+    if (isLikelyUrl) {
+      candidate = 'https://' + candidate;
     } else {
       return { isSafe: true, warnings: [], isUrl: false };
     }
@@ -168,16 +173,19 @@ export function evaluateUrlSecurity(text) {
   const warnings = [];
 
   try {
-    const url = new URL(trimmed);
+    const url = new URL(candidate);
+    if (url.protocol !== 'http:' && url.protocol !== 'https:') {
+      return { isSafe: true, warnings: [], isUrl: false };
+    }
 
-    // 1. Unencrypted HTTP warning
-    if (url.protocol === 'http:') {
+    // 1. Unencrypted HTTP warning (exclude local dev)
+    if (url.protocol === 'http:' && url.hostname !== 'localhost' && url.hostname !== '127.0.0.1') {
       warnings.push('Connection is unencrypted (HTTP). Data transmitted could be intercepted.');
     }
 
     // 2. IP Address destination check
     const isIp = /^(\d{1,3}\.){3}\d{1,3}$/.test(url.hostname);
-    if (isIp) {
+    if (isIp && url.hostname !== '127.0.0.1') {
       warnings.push('Destination uses a raw IP address instead of a recognized domain name.');
     }
 
@@ -191,10 +199,10 @@ export function evaluateUrlSecurity(text) {
       }
     }
 
-    // 4. Excessive subdomains or deceptive lookalikes
+    // 4. Excessive subdomains
     const subdomains = url.hostname.split('.');
     if (subdomains.length > 4) {
-      warnings.push('Domain contains unusually high number of subdomains, which is common in phishing attacks.');
+      warnings.push('Domain contains unusually high number of subdomains, common in phishing.');
     }
 
     return {
@@ -202,9 +210,9 @@ export function evaluateUrlSecurity(text) {
       warnings,
       isUrl: true,
       hostname: url.hostname,
-      fullUrl: trimmed,
+      fullUrl: url.href,
     };
   } catch {
-    return { isSafe: false, warnings: ['Malformed URL structure.'], isUrl: true };
+    return { isSafe: false, warnings: ['Malformed URL structure.'], isUrl: false };
   }
 }

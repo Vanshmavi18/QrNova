@@ -798,14 +798,15 @@ function displayScanResult(content) {
       if (directDomain) directDomain.textContent = security.hostname || 'Web Destination';
       if (directAnchor) {
         directAnchor.href = security.fullUrl;
+        directAnchor.target = '_blank';
+        directAnchor.rel = 'noopener noreferrer';
         directAnchor.textContent = security.fullUrl;
       }
       if (directOpenBtn) {
         directOpenBtn.href = security.fullUrl;
-        directOpenBtn.onclick = (e) => {
-          e.preventDefault();
-          handleSafeUrlOpen(security);
-        };
+        directOpenBtn.target = '_blank';
+        directOpenBtn.rel = 'noopener noreferrer';
+        directOpenBtn.onclick = null; // Native navigation works 100% reliably on all mobile & desktop browsers
       }
     }
 
@@ -815,7 +816,10 @@ function displayScanResult(content) {
 
     if (openUrlBtn) {
       openUrlBtn.style.display = 'inline-flex';
-      openUrlBtn.onclick = () => handleSafeUrlOpen(security);
+      openUrlBtn.onclick = (e) => {
+        e.preventDefault();
+        openUrlDirectly(security.fullUrl);
+      };
     }
 
     if (urlWarningBox) {
@@ -829,8 +833,20 @@ function displayScanResult(content) {
 
     // Auto-open if configured by user
     if (localStorage.getItem('qrnova_auto_open') === 'true') {
-      handleSafeUrlOpen(security);
-      showToast('🚀 Directly opening scanned link in new tab...', 'success');
+      let opened = false;
+      try {
+        const win = window.open(security.fullUrl, '_blank', 'noopener,noreferrer');
+        if (win && !win.closed && typeof win.closed !== 'undefined') {
+          opened = true;
+        }
+      } catch {}
+
+      if (opened) {
+        showToast('🚀 Opening scanned link in new tab...', 'success');
+      } else {
+        showToast('⚡ Link ready! Tap "Open Link" below.', 'info');
+        directOpenBtn?.focus();
+      }
     }
   } else {
     if (directBanner) directBanner.style.display = 'none';
@@ -847,15 +863,15 @@ function displayScanResult(content) {
   showToast(`Successfully decoded ${type.toUpperCase()} QR code!`, 'success');
 }
 
-function handleSafeUrlOpen(security) {
-  if (!security.isSafe) {
-    // Show destination confirmation modal before proceeding
-    const proceed = confirm(
-      `⚠️ Potential Security Risk Detected!\n\nDestination: ${security.fullUrl}\nWarnings:\n- ${security.warnings.join('\n- ')}\n\nDo you still wish to open this external link?`
-    );
-    if (!proceed) return;
-  }
-  window.open(security.fullUrl, '_blank', 'noopener,noreferrer');
+function openUrlDirectly(url) {
+  if (!url) return;
+  const a = document.createElement('a');
+  a.href = url;
+  a.target = '_blank';
+  a.rel = 'noopener noreferrer';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
 }
 
 /* ==================================================
@@ -1829,11 +1845,16 @@ async function refreshServiceStatus() {
    DYNAMIC ROUTE RESOLVER (/d/:shortCode)
 ================================================== */
 function setupDynamicRouteHandler() {
-  const hash = window.location.hash;
-  if (hash.startsWith('#/view/')) {
-    const shortCode = hash.replace('#/view/', '');
-    handleDynamicQrLookup(shortCode);
-  }
+  const checkHash = () => {
+    const hash = window.location.hash;
+    if (hash.startsWith('#/view/')) {
+      const shortCode = hash.replace('#/view/', '').split('?')[0].trim();
+      if (shortCode) handleDynamicQrLookup(shortCode);
+    }
+  };
+
+  checkHash();
+  window.addEventListener('hashchange', checkHash);
 }
 
 async function handleDynamicQrLookup(shortCode) {
@@ -1841,8 +1862,8 @@ async function handleDynamicQrLookup(shortCode) {
     const res = await fetch(`/api/qr/dynamic/${shortCode}`);
     const data = await res.json();
 
-    if (res.status === 410 || data.expired) {
-      alert(`🔴 This QR code has expired on ${new Date(data.expiryDate).toLocaleString()} and is no longer active.`);
+    if (res.status === 410 || data.expired || window.location.hash.includes('error=expired')) {
+      alert(`🔴 This QR code has expired on ${new Date(data.expiryDate || Date.now()).toLocaleString()} and is no longer active.`);
       return;
     }
 

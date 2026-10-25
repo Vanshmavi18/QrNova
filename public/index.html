@@ -147,7 +147,7 @@
                 <label class="form-label" for="input-wifi-pass">Network Password</label>
                 <input type="text" id="input-wifi-pass" name="password" class="form-input" placeholder="Wi-Fi Password">
               </div>
-              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+              <div class="form-grid-2">
                 <div class="form-group">
                   <label class="form-label" for="input-wifi-enc">Security Protocol</label>
                   <select id="input-wifi-enc" name="encryption" class="form-select">
@@ -166,7 +166,7 @@
 
             <!-- 4. Contact / vCard Form -->
             <div id="form-vcard" class="type-form-pane">
-              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+              <div class="form-grid-2">
                 <div class="form-group">
                   <label class="form-label" for="input-vcard-fn">Full Name</label>
                   <input type="text" id="input-vcard-fn" name="fullName" class="form-input" placeholder="Sarah Connor">
@@ -176,7 +176,7 @@
                   <input type="text" id="input-vcard-org" name="org" class="form-input" placeholder="Tech Innovations Inc.">
                 </div>
               </div>
-              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+              <div class="form-grid-2">
                 <div class="form-group">
                   <label class="form-label" for="input-vcard-phone">Phone Number</label>
                   <input type="tel" id="input-vcard-phone" name="phone" class="form-input" placeholder="+1 555 123 4567">
@@ -230,7 +230,7 @@
 
             <!-- 8. Location / GPS Form -->
             <div id="form-geo" class="type-form-pane">
-              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+              <div class="form-grid-2">
                 <div class="form-group">
                   <label class="form-label" for="input-geo-lat">Latitude</label>
                   <input type="text" id="input-geo-lat" name="geoLat" class="form-input" placeholder="37.7749">
@@ -292,7 +292,7 @@
             </div>
 
             <!-- Colors & ECC -->
-            <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; margin-bottom: 16px;">
+            <div class="form-grid-3 form-grid-mb">
               <div class="form-group">
                 <label class="form-label" for="gen-fg-color">QR Foreground</label>
                 <input type="color" id="gen-fg-color" class="form-input" value="#FFB1B1" style="height: 42px; padding: 4px;">
@@ -313,7 +313,7 @@
             </div>
 
             <!-- Resolution & Logo Upload -->
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px;">
+            <div class="form-grid-2 form-grid-mb">
               <div class="form-group">
                 <label class="form-label" for="gen-size-res">Export Resolution</label>
                 <select id="gen-size-res" class="form-select">
@@ -610,7 +610,7 @@
         <hr style="border-color: var(--border-subtle); margin: 28px 0;">
 
         <h3>Database & Brevo Email Service Status</h3>
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 14px;">
+        <div class="form-grid-2 form-grid-mt">
           <div class="glass-panel" style="padding: 16px; background: rgba(0,0,0,0.2);">
             <div style="display: flex; justify-content: space-between; align-items: center;">
               <div style="font-weight: 700; color: var(--primary);">🍃 MongoDB Database</div>
@@ -731,7 +731,7 @@
       <div class="modal-body">
 
         <!-- Top Switcher: Log In vs Sign Up -->
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; background: rgba(255, 219, 176, 0.08); padding: 4px; border-radius: var(--radius-sm); margin-bottom: 20px;">
+        <div class="auth-modal-tabs">
           <button type="button" class="btn btn-sm btn-primary" id="tab-btn-auth-login" style="border-radius: 6px; font-weight: 700;">🔑 Log In</button>
           <button type="button" class="btn btn-sm btn-secondary" id="tab-btn-auth-signup" style="border-radius: 6px; font-weight: 700;">✨ Sign Up</button>
         </div>
