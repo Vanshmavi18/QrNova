@@ -56,6 +56,7 @@ import {
   clearAllHistory,
   isItemExpired,
   isItemExpiringSoon,
+  migrateGuestItemsToUser,
 } from './modules/historyManager.js';
 
 import {
@@ -1009,7 +1010,18 @@ async function refreshSavedView() {
   const container = document.getElementById('saved-cards-container');
   if (!container) return;
 
-  const search = document.getElementById('saved-search-input')?.value?.toLowerCase() || '';
+  const userBadge = document.getElementById('saved-vault-user-badge');
+  const user = getCurrentUser();
+  if (userBadge) {
+    if (user) {
+      userBadge.textContent = `☁️ Cloud Vault (${user.name || user.email})`;
+      userBadge.className = 'badge badge-active';
+    } else {
+      userBadge.textContent = '💾 Local Device Storage';
+      userBadge.className = 'badge badge-expiring';
+    }
+  }
+
   const items = await getSavedQrs(getAuthToken());
 
   const filtered = items.filter((item) => {
@@ -1168,6 +1180,29 @@ function openSaveModal(item) {
       expiryInput.value = d.toISOString().slice(0, 16);
     } else {
       expiryInput.value = '';
+    }
+  }
+
+  const authBanner = document.getElementById('save-modal-auth-banner');
+  const user = getCurrentUser();
+  if (authBanner) {
+    if (user) {
+      authBanner.innerHTML = `
+        <div style="background: rgba(34, 197, 94, 0.12); border: 1px solid rgba(34, 197, 94, 0.35); border-radius: 8px; padding: 9px 12px; font-size: 0.82rem; color: #4ade80; display: flex; align-items: center; gap: 8px;">
+          <span>☁️ Storing into <strong>${escapeHtml(user.name || user.email)}</strong>'s MongoDB account</span>
+        </div>
+      `;
+    } else {
+      authBanner.innerHTML = `
+        <div style="background: rgba(255, 177, 177, 0.12); border: 1px solid rgba(255, 177, 177, 0.35); border-radius: 8px; padding: 9px 12px; font-size: 0.82rem; color: var(--accent); display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap;">
+          <span>💡 Saving locally. <a href="#" id="link-save-modal-auth" style="color: var(--primary); font-weight: 700; text-decoration: underline;">Sign In or Register</a> to sync to MongoDB Cloud.</span>
+        </div>
+      `;
+      document.getElementById('link-save-modal-auth')?.addEventListener('click', (e) => {
+        e.preventDefault();
+        modal.classList.remove('active');
+        openAuthModal('signup');
+      });
     }
   }
 
@@ -1492,6 +1527,7 @@ function setupAuthModalEvents() {
       playChime('success');
       showToast(`Welcome back, ${res.user?.name || res.user?.email}!`, 'success');
 
+      await migrateGuestItemsToUser(getAuthToken());
       refreshHistoryView();
       refreshSavedView();
     } catch (err) {
@@ -1530,6 +1566,7 @@ function setupAuthModalEvents() {
       playChime('success');
       showToast(`Account created! Welcome, ${res.user?.name || res.user?.email}!`, 'success');
 
+      await migrateGuestItemsToUser(getAuthToken());
       refreshHistoryView();
       refreshSavedView();
     } catch (err) {
@@ -1669,6 +1706,7 @@ function setupAuthModalEvents() {
         playChime('success');
         showToast(`Welcome, ${res.user?.name || res.user?.email || 'User'}!`, 'success');
 
+        await migrateGuestItemsToUser(getAuthToken());
         refreshHistoryView();
         refreshSavedView();
       } catch (err) {

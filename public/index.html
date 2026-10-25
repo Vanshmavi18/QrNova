@@ -523,8 +523,11 @@
     <section id="tab-saved" class="tab-pane" aria-labelledby="nav-btn-saved">
       <div class="history-controls-bar">
         <div>
-          <h2>⭐ My Saved QR Codes</h2>
-          <p>Permanently stored custom QR codes synced across reloads and MongoDB.</p>
+          <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+            <h2 style="margin: 0;">⭐ My Saved QR Codes</h2>
+            <span id="saved-vault-user-badge" class="badge" style="display: inline-block; font-size: 0.78rem; padding: 4px 10px; border-radius: 9999px;"></span>
+          </div>
+          <p style="margin-top: 4px;">Permanently stored custom QR codes synced with MongoDB Cloud Vault.</p>
         </div>
         <div style="display: flex; gap: 10px;">
           <input type="text" id="saved-search-input" class="form-input history-search-input" placeholder="🔍 Search saved vault...">
@@ -662,6 +665,7 @@
         <button class="btn btn-icon btn-secondary" onclick="closeModal('modal-save-qr')">✕</button>
       </div>
       <div class="modal-body">
+        <div id="save-modal-auth-banner" style="margin-bottom: 14px;"></div>
         <div class="form-group">
           <label class="form-label" for="save-modal-title">QR Title / Custom Name</label>
           <input type="text" id="save-modal-title" class="form-input" placeholder="e.g., Office Wi-Fi, Portfolio Link">

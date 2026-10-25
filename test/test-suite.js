@@ -161,8 +161,43 @@ async function runTestSuite() {
   }
   console.log(`   ✅ Dynamic link resolved: "${dynData.item?.title}", Active (expired: false)`);
 
-  // 9. AI Analysis Endpoint
-  console.log('\n9️⃣  Testing AI Content Analysis (POST /api/qr/ai-analyze)...');
+  // 9. My QR Vault Persistence and Isolation Check
+  console.log('\n9️⃣  Testing "My QR" Vault Persistence & User Isolation (GET /api/qr?isSaved=true)...');
+  const vaultRes = await fetch(`${BASE_URL}/api/qr?isSaved=true`, {
+    headers: { Authorization: `Bearer ${jwtToken}` },
+  });
+  const vaultData = await vaultRes.json();
+  if (!vaultData.success || !Array.isArray(vaultData.items)) {
+    throw new Error(vaultData.error || 'Failed to retrieve saved QR codes from vault');
+  }
+  const savedItem = vaultData.items.find((it) => it._id === createdQrId);
+  if (!savedItem || savedItem.isSaved !== true) {
+    throw new Error('Created QR was not marked as isSaved in user account vault');
+  }
+  console.log(`   ✅ QR item successfully persisted in User A's MongoDB Vault ("${savedItem.title}")`);
+
+  // Test User Isolation: User B must not see User A's vault items
+  const userBEmail = `isolated.user.${Date.now()}@example.com`;
+  const regBRes = await fetch(`${BASE_URL}/api/auth/register`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ name: 'User B', email: userBEmail, password: 'Password456!' }),
+  });
+  const regBData = await regBRes.json();
+  const tokenB = regBData.token;
+
+  const vaultBRes = await fetch(`${BASE_URL}/api/qr?isSaved=true`, {
+    headers: { Authorization: `Bearer ${tokenB}` },
+  });
+  const vaultBData = await vaultBRes.json();
+  const leakedItem = (vaultBData.items || []).find((it) => it._id === createdQrId);
+  if (leakedItem) {
+    throw new Error('User B was able to see User A\'s saved QR! Isolation failure.');
+  }
+  console.log('   ✅ User account isolation verified: User B cannot access User A\'s stored QR codes');
+
+  // 10. AI Analysis Endpoint
+  console.log('\n🔟 Testing AI Content Analysis (POST /api/qr/ai-analyze)...');
   const aiRes = await fetch(`${BASE_URL}/api/qr/ai-analyze`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -177,8 +212,8 @@ async function runTestSuite() {
   }
   console.log(`   ✅ AI Analysis generated (${aiData.provider})`);
 
-  // 10. Clean up test record
-  console.log('\n🔟 Cleaning up test data (DELETE /api/qr/:id)...');
+  // 11. Clean up test record
+  console.log('\n1️⃣1️⃣ Cleaning up test data (DELETE /api/qr/:id)...');
   const delRes = await fetch(`${BASE_URL}/api/qr/${createdQrId}`, {
     method: 'DELETE',
     headers: { Authorization: `Bearer ${jwtToken}` },
@@ -188,7 +223,7 @@ async function runTestSuite() {
   console.log('   ✅ Test QR removed cleanly');
 
   console.log('\n==================================================');
-  console.log('🎉 ALL 10 TESTS PASSED WITH 100% SUCCESS!');
+  console.log('🎉 ALL 11 TESTS PASSED WITH 100% SUCCESS!');
   console.log('==================================================\n');
 
   process.exit(0);

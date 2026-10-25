@@ -1,9 +1,20 @@
 /**
  * QrNova History Manager
- * Dual History Tracking (Generated & Scanned) with MongoDB Sync & Offline Storage
+ * Dual History Tracking (Generated & Scanned) with MongoDB Sync & Isolated Per-User Offline Storage
  */
 
-const LOCAL_STORAGE_KEY = 'qrnova_history_cache_v1';
+function getStorageKey() {
+  try {
+    const userJson = localStorage.getItem('qrnova_auth_user');
+    if (userJson) {
+      const u = JSON.parse(userJson);
+      if (u && (u.id || u._id)) {
+        return `qrnova_history_cache_${u.id || u._id}`;
+      }
+    }
+  } catch (e) {}
+  return 'qrnova_history_cache_guest';
+}
 
 let historyCache = [];
 
@@ -11,15 +22,18 @@ let historyCache = [];
  * Load history items (combining local cache with server API)
  */
 export async function loadHistory({ source, token } = {}) {
-  // 1. Read from local storage first for instant UI response (filtering out any legacy test data)
+  const storageKey = getStorageKey();
+
+  // 1. Read from isolated local storage first for instant UI response
   try {
-    const raw = localStorage.getItem(LOCAL_STORAGE_KEY);
+    const raw = localStorage.getItem(storageKey);
     if (raw) {
       const parsed = JSON.parse(raw);
       historyCache = Array.isArray(parsed) 
         ? parsed.filter((it) => it && it.title !== 'Company Wi-Fi Guest Access' && it.shortCode !== '614804ed')
         : [];
-      saveToLocalStorage(historyCache);
+    } else {
+      historyCache = [];
     }
   } catch (e) {
     historyCache = [];
@@ -37,16 +51,26 @@ export async function loadHistory({ source, token } = {}) {
     if (res.ok) {
       const data = await res.json();
       if (data.success && Array.isArray(data.items)) {
-        // Merge server items with local items
-        const serverMap = new Map(data.items.map((it) => [it._id || it.id, it]));
-        
-        // Add non-duplicate local items
-        historyCache.forEach((localItem) => {
-          const key = localItem._id || localItem.id;
-          if (!serverMap.has(key)) {
-            serverMap.set(key, localItem);
-          }
-        });
+        const serverItems = data.items.filter((it) => it && it.title !== 'Company Wi-Fi Guest Access');
+        const serverMap = new Map(serverItems.map((it) => [it._id || it.id, it]));
+
+        if (token) {
+          // Authenticated: Keep pending local-only items that haven't reached server yet
+          historyCache.forEach((localItem) => {
+            const key = localItem._id || localItem.id;
+            if (key && String(key).startsWith('local_') && !serverMap.has(key)) {
+              serverMap.set(key, localItem);
+            }
+          });
+        } else {
+          // Guest mode: preserve local offline items
+          historyCache.forEach((localItem) => {
+            const key = localItem._id || localItem.id;
+            if (!serverMap.has(key)) {
+              serverMap.set(key, localItem);
+            }
+          });
+        }
 
         historyCache = Array.from(serverMap.values());
         saveToLocalStorage(historyCache);
@@ -57,6 +81,47 @@ export async function loadHistory({ source, token } = {}) {
   }
 
   return filterHistoryBySource(source);
+}
+
+/**
+ * Migrate guest items to authenticated account in MongoDB Atlas
+ */
+export async function migrateGuestItemsToUser(token) {
+  if (!token) return;
+  try {
+    const guestRaw = localStorage.getItem('qrnova_history_cache_guest');
+    if (!guestRaw) return;
+    const guestItems = JSON.parse(guestRaw);
+    if (!Array.isArray(guestItems) || guestItems.length === 0) return;
+
+    for (const item of guestItems) {
+      if (!item || item.title === 'Company Wi-Fi Guest Access') continue;
+      await fetch('/api/qr', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          title: item.title,
+          notes: item.notes,
+          type: item.type,
+          payload: item.payload,
+          styleConfig: item.styleConfig,
+          isPasswordProtected: item.isPasswordProtected,
+          isFavorite: item.isFavorite,
+          isSaved: item.isSaved,
+          source: item.source,
+          expiryDate: item.expiryDate,
+        }),
+      });
+    }
+
+    // Clean up guest cache after successful migration
+    localStorage.removeItem('qrnova_history_cache_guest');
+  } catch (err) {
+    console.warn('Could not migrate guest items to account:', err.message);
+  }
 }
 
 /**
@@ -195,7 +260,8 @@ function filterHistoryBySource(source) {
 
 function saveToLocalStorage(items) {
   try {
-    localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(items));
+    const storageKey = getStorageKey();
+    localStorage.setItem(storageKey, JSON.stringify(items));
   } catch (e) {
     console.error('LocalStorage error:', e);
   }

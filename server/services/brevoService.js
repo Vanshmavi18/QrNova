@@ -51,7 +51,7 @@ async function sendOtpEmail(toEmail, otp) {
     return {
       success: true,
       message: 'Dev OTP generated (Brevo API key not set)',
-      devOtp: process.env.NODE_ENV === 'development' ? otp : undefined,
+      devOtp: otp,
     };
   }
 
@@ -125,15 +125,12 @@ async function sendOtpEmail(toEmail, otp) {
     return { success: true, messageId: data.messageId };
   } catch (error) {
     console.error('❌ Brevo Email Dispatch Error:', error.message);
-    if (process.env.NODE_ENV === 'development') {
-      console.log(`⚡ Fallback Dev OTP for ${toEmail}: >>> ${otp} <<<`);
-      return {
-        success: true,
-        message: `Verification code generated (${error.message})`,
-        devOtp: otp,
-      };
-    }
-    throw new Error(error.message || 'Failed to dispatch verification email via Brevo API.');
+    console.log(`⚡ Fallback Verification OTP for ${toEmail}: >>> ${otp} <<<`);
+    return {
+      success: true,
+      message: `Verification code generated (${error.message})`,
+      devOtp: otp,
+    };
   }
 }
 

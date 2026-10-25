@@ -222,6 +222,10 @@ router.put('/:id', authMiddleware(false), async (req, res) => {
         return res.status(404).json({ success: false, error: 'QR code not found.' });
       }
 
+      if (req.user && !item.userId) {
+        item.userId = req.user.id;
+      }
+
       if (title !== undefined) item.title = title;
       if (notes !== undefined) item.notes = notes;
       if (isFavorite !== undefined) item.isFavorite = Boolean(isFavorite);
@@ -234,6 +238,9 @@ router.put('/:id', authMiddleware(false), async (req, res) => {
         return res.status(404).json({ success: false, error: 'QR code not found.' });
       }
       const item = memoryQrCodes.get(id);
+      if (req.user && !item.userId) {
+        item.userId = req.user.id;
+      }
       if (title !== undefined) item.title = title;
       if (notes !== undefined) item.notes = notes;
       if (isFavorite !== undefined) item.isFavorite = Boolean(isFavorite);
